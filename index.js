@@ -154,23 +154,40 @@ app.get('/', (req, res) => {
           color: white;
           border: 1px solid #333;
         }
+        /* 🔵 BLUE 3D BUTTON */
         .btn-momo {
-          background: linear-gradient(90deg, #10b981, #059669);
-        }
-        button {
-          background: linear-gradient(90deg, #3b82f6, #2563eb);
+          background: #3b82f6;
           color: white;
           font-weight: bold;
+          text-shadow: 0 -1px 0 rgba(0,0,0,0.2);
+          box-shadow: 
+            0 4px 0 #1d4ed8,
+            0 6px 8px rgba(0,0,0,0.3);
+          transition: all 0.1s ease;
         }
+        .btn-momo:hover {
+          background: #2563eb;
+          transform: translateY(2px);
+          box-shadow: 
+            0 2px 0 #1d4ed8,
+            0 4px 6px rgba(0,0,0,0.3);
+        }
+        .btn-momo:active {
+          transform: translateY(4px);
+          box-shadow: 
+            0 0 0 #1d4ed8,
+            0 2px 4px rgba(0,0,0,0.3);
+        }
+        /* 🔵 BLUE COMMISSION RESULT AREA */
         #result {
           margin-top: 1rem;
           padding: 1rem;
           border-radius: 10px;
           display: none;
+          background: #1e3a8a;
+          border-left: 4px solid #3b82f6;
+          color: #dbeafe;
         }
-        .success { background: #064e3b; border-left: 4px solid #10b981; display: block; }
-        .pending { background: #3730a3; border-left: 4px solid #818cf8; display: block; }
-        .error { background: #450a0a; border-left: 4px solid #ef4444; display: block; }
         .footer {
           text-align: center;
           color: #777;
@@ -206,13 +223,11 @@ app.get('/', (req, res) => {
           const r = document.getElementById('result');
           
           if (!amount || amount <= 0 || !phone.startsWith('+233')) {
-            r.className = 'error';
             r.innerHTML = 'Enter valid GHS amount and +233 number';
             r.style.display = 'block';
             return;
           }
 
-          r.className = 'pending';
           r.innerHTML = 'Sending request to ' + phone + '...';
           r.style.display = 'block';
 
@@ -224,15 +239,12 @@ app.get('/', (req, res) => {
             });
             const data = await res.json();
             if (data.success) {
-              r.className = 'pending';
               r.innerHTML = '✅ Request sent! Waiting for approval...';
               setTimeout(() => {
-                r.className = 'success';
-                r.innerHTML = '<strong>🎉 Payment Completed!</strong><br/>Commission: GHS ' + (amount * 0.003).toFixed(2);
+                r.innerHTML = '<strong>🎉 Payment Completed!</strong><br/>Commission to KS1EGF: GHS ' + (amount * 0.003).toFixed(2);
               }, 4000);
             }
           } catch (e) {
-            r.className = 'error';
             r.innerHTML = '❌ Network error';
             r.style.display = 'block';
           }
