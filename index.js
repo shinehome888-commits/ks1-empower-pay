@@ -1,31 +1,52 @@
-// KS1 EMPOWER PAY – PHASE 3.1 (MOCK MOMO + PERSISTENT COMMISSIONS)
-// Ready for real Hubtel integration when approved
+// KS1 EMPOWER PAY – PHASE 3.1 (ALL-IN-ONE)
+// Nonprofit payment platform for African SMEs by KS1 Empire Group & Foundation (KS1EGF)
+// Free • Persistent • Mobile Money Ready
 
 const express = require('express');
 const { Pool } = require('pg');
 const app = express();
 app.use(express.json());
 
-// === DATABASE ===
-const DB_URL = process.env.DATABASE_URL || 'postgresql://postgres:your_password@db.your_project_id.supabase.co:5432/postgres';
-const pool = new Pool({ connectionString: DB_URL });
+// === DATABASE SETUP ===
+// ONLY use environment variable — never hardcode passwords in code
+const DB_URL = process.env.DATABASE_URL;
 
+if (!DB_URL) {
+  console.error("❌ FATAL: DATABASE_URL not set in environment");
+  process.exit(1);
+}
+
+const pool = new Pool({
+  connectionString: DB_URL,
+  ssl: {
+    rejectUnauthorized: false // Required for Supabase on Render
+  }
+});
+
+// Safe database init (won't crash app)
 async function initDB() {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS commissions (
-      id TEXT PRIMARY KEY,
-      transaction_id TEXT NOT NULL,
-      gross_amount REAL NOT NULL,
-      commission_amount REAL NOT NULL,
-      net_to_merchant REAL NOT NULL,
-      ks1egf_wallet TEXT NOT NULL,
-      currency TEXT DEFAULT 'GHS',
-      payment_method TEXT DEFAULT 'momo',
-      status TEXT DEFAULT 'completed',
-      created_at TIMESTAMPTZ DEFAULT NOW()
-    )
-  `);
-  console.log("✅ Database ready");
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS commissions (
+        id TEXT PRIMARY KEY,
+        transaction_id TEXT NOT NULL,
+        gross_amount REAL NOT NULL,
+        commission_amount REAL NOT NULL,
+        net_to_merchant REAL NOT NULL,
+        ks1egf_wallet TEXT NOT NULL DEFAULT '+233240254680',
+        currency TEXT DEFAULT 'GHS',
+        payment_method TEXT DEFAULT 'momo',
+        status TEXT DEFAULT 'completed',
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    console.log("✅ Database ready");
+    return true;
+  } catch (err) {
+    console.error("❌ Database error:", err.message);
+    console.error("💡 Check DATABASE_URL in Render Environment");
+    return false;
+  }
 }
 
 // === MOCK MOMO ENDPOINT ===
@@ -36,10 +57,9 @@ app.post('/api/momo/request', async (req, res) => {
     return res.status(400).json({ error: 'Invalid phone or amount' });
   }
 
-  // Simulate MoMo request (in real version: call Hubtel API here)
   console.log(`📱 MoMo Request: GHS ${amount} to ${phone}`);
 
-  // Wait 3 seconds (simulate customer approval)
+  // Simulate customer approval after 3 seconds
   setTimeout(async () => {
     const commissionRate = 0.003;
     const commissionAmount = parseFloat((amount * commissionRate).toFixed(2));
@@ -49,17 +69,16 @@ app.post('/api/momo/request', async (req, res) => {
 
     try {
       await pool.query(
-        `INSERT INTO commissions (id, transaction_id, gross_amount, commission_amount, net_to_merchant, ks1egf_wallet, payment_method)
-         VALUES ($1, $2, $3, $4, $5, $6, 'momo')`,
-        [commissionId, txId, amount, commissionAmount, netToMerchant, '+233240254680']
+        `INSERT INTO commissions (id, transaction_id, gross_amount, commission_amount, net_to_merchant, payment_method)
+         VALUES ($1, $2, $3, $4, $5, 'momo')`,
+        [commissionId, txId, amount, commissionAmount, netToMerchant]
       );
       console.log("✅ Commission saved:", commissionId);
     } catch (err) {
-      console.error("DB_ERROR:", err);
+      console.error("DB_SAVE_ERROR:", err.message);
     }
   }, 3000);
 
-  // Immediately respond with "request sent"
   res.json({
     success: true,
     message: "Payment request sent to customer's phone",
@@ -80,7 +99,7 @@ app.get('/api/test', (req, res) => {
   });
 });
 
-// View commissions
+// View all commissions
 app.get('/api/commissions', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM commissions ORDER BY created_at DESC LIMIT 100');
@@ -91,11 +110,11 @@ app.get('/api/commissions', async (req, res) => {
       list: result.rows
     });
   } catch (err) {
-    res.status(500).json({ error: 'Database error' });
+    res.status(500).json({ error: 'Database unavailable' });
   }
 });
 
-// === POS FRONTEND WITH MOMO BUTTON ===
+// Serve POS frontend
 app.get('/', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -247,7 +266,6 @@ app.get('/', (req, res) => {
             const data = await res.json();
             if (data.success) {
               showPending('✅ Request sent! Waiting for customer approval...');
-              // Simulate auto-complete after 4 seconds
               setTimeout(() => {
                 showSuccess(\`
                   <strong>🎉 Payment Completed!</strong><br/><br/>
@@ -289,9 +307,14 @@ app.get('/', (req, res) => {
   `);
 });
 
-initDB().then(() => {
+// Start server
+initDB().then((dbReady) => {
   const PORT = process.env.PORT || 8080;
-  app.listen(PORT, () => {
-    console.log(\`🚀 KS1 Empower Pay running on port \${PORT}\`);
+  app.listen(PORT, '0.0.0.0', () => {
+    if (dbReady) {
+      console.log(`🚀 KS1 Empower Pay running on port ${PORT}`);
+    } else {
+      console.log(`⚠️  App running WITHOUT database (commissions will not save)`);
+    }
   });
 });
