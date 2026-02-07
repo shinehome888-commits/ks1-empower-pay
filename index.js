@@ -1,24 +1,25 @@
 // KS1 EMPOWER PAY – PHASE 1 (FULL APP)
-// Works on Render.com free tier • Logs commissions to console • Mobile-friendly POS
+// Nonprofit payment router for African SMEs by KS1 Empire Group & Foundation (KS1EGF)
+// Works on Render.com free tier • Logs every commission • Zero cost • Mobile-first
 
 const express = require('express');
 const app = express();
 app.use(express.json());
 
-let commissions = []; // In-memory (resets on restart — OK for Phase 1)
+let commissions = []; // In-memory storage (Phase 1)
 
-// Health check
+// Health check endpoint
 app.get('/api/test', (req, res) => {
   res.json({
     status: '✅ LIVE',
     nonprofit: 'KS1 Empire Group & Foundation (KS1EGF)',
-    mission: 'Empower African SMEs + fund nonprofit via micro-commissions',
+    mission: 'Empower African SMEs via micro-commissions',
     host: 'Render.com (Free Tier)',
     updated_at: new Date().toISOString()
   });
 });
 
-// Create payment → auto-donate to KS1EGF
+// Process payment → auto-donate micro-commission to KS1EGF
 app.post('/api/payment/transaction', (req, res) => {
   const { amount = 100, currency = 'GHS', payment_method = 'momo' } = req.body;
   
@@ -26,7 +27,7 @@ app.post('/api/payment/transaction', (req, res) => {
     return res.status(400).json({ error: 'Invalid amount' });
   }
 
-  // ⭐ MICRO-COMMISSION ENGINE (CORE)
+  // ⭐ CORE: MICRO-COMMISSION ENGINE (NON-EXPLOITATIVE, TRANSPARENT)
   const commissionRate = 0.003; // 0.3%
   const commissionAmount = parseFloat((amount * commissionRate).toFixed(2));
   const netToMerchant = parseFloat((amount - commissionAmount).toFixed(2));
@@ -43,16 +44,15 @@ app.post('/api/payment/transaction', (req, res) => {
     timestamp: new Date().toISOString()
   };
 
-  transactions.push(tx);
   commissions.push({
     transaction_id: txId,
     commission_amount: commissionAmount,
-    ks1egf_wallet: '+233240254680',
+    ks1egf_wallet: '+233240254680', // ← UPDATE IF NEEDED
     currency,
     timestamp: tx.timestamp
   });
 
-  // 🔍 LOG COMMISSION TO CONSOLE (visible in Render logs!)
+  // 🔍 LOG TO CONSOLE (visible in Render logs forever!)
   console.log("COMMISSION_LOG:", JSON.stringify({
     type: "micro-commission",
     gross_amount: amount,
@@ -70,7 +70,7 @@ app.post('/api/payment/transaction', (req, res) => {
   });
 });
 
-// Admin: View all commissions (in memory)
+// View all commissions (for admin transparency)
 app.get('/api/commissions', (req, res) => {
   const total = commissions.reduce((sum, c) => sum + c.commission_amount, 0);
   res.json({
@@ -80,7 +80,7 @@ app.get('/api/commissions', (req, res) => {
   });
 });
 
-// Serve beautiful mobile-friendly POS frontend
+// Serve mobile-friendly POS frontend
 app.get('/', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -188,8 +188,8 @@ app.get('/', (req, res) => {
 
       <div class="card">
         <h2>How It Works</h2>
-        <p>Every transaction supports <span class="highlight">KS1 Empire Group & Foundation</span> with a tiny <span class="highlight">0.3% micro-commission</span>.</p>
-        <p>You keep <span class="highlight">99.7%</span>. We empower millions.</p>
+        <p>Every transaction supports <span class="highlight">KS1 Empire Group & Foundation (KS1EGF)</span> with a tiny <span class="highlight">0.3% micro-commission</span>.</p>
+        <p>You keep <span class="highlight">99.7%</span>. We empower millions of African SMEs.</p>
         <p><small>Example: GHS 100 → GHS 0.30 to KS1EGF, GHS 99.70 to you.</small></p>
       </div>
 
@@ -242,7 +242,6 @@ app.get('/', (req, res) => {
           }
         }
 
-        // Allow Enter key to submit
         document.getElementById('amount').addEventListener('keypress', (e) => {
           if (e.key === 'Enter') createTransaction();
         });
@@ -252,7 +251,7 @@ app.get('/', (req, res) => {
   `);
 });
 
-// Start server (Render uses PORT from env)
+// Start server (Render uses dynamic PORT)
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(\`🚀 KS1 Empower Pay running on port \${PORT}\`);
