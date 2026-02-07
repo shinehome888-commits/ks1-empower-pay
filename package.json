@@ -1,7 +1,7 @@
 {
   "name": "ks1-empower-pay",
   "version": "1.0.0",
-  "description": "Nonprofit payment router for African SMEs – KS1 Empire Group & Foundation",
+  "description": "Nonprofit payment router for African SMEs by KS1 Empire Group & Foundation KS1EGF",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
