@@ -1,4 +1,4 @@
-// KS1 EMPOWER PAY – PHASE 3.1 (ALL-IN-ONE)
+// KS1 EMPOWER PAY – PHASE 4 (ALL-IN-ONE)
 // Nonprofit payment platform for African SMEs by KS1 Empire Group & Foundation (KS1EGF)
 
 const express = require('express');
@@ -45,6 +45,7 @@ async function initDB() {
   }
 }
 
+// === MOCK MOMO ENDPOINT ===
 app.post('/api/momo/request', async (req, res) => {
   const { amount = 100, phone } = req.body;
   if (!phone || typeof amount !== 'number' || amount <= 0) {
@@ -81,6 +82,7 @@ app.post('/api/momo/request', async (req, res) => {
   });
 });
 
+// Health check
 app.get('/api/test', (req, res) => {
   res.json({
     status: '✅ LIVE',
@@ -89,6 +91,7 @@ app.get('/api/test', (req, res) => {
   });
 });
 
+// View all commissions
 app.get('/api/commissions', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM commissions ORDER BY created_at DESC LIMIT 100');
@@ -103,6 +106,110 @@ app.get('/api/commissions', async (req, res) => {
   }
 });
 
+// === ADMIN DASHBOARD ===
+app.get('/admin', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT COUNT(*)::int AS total_transactions, COALESCE(SUM(commission_amount), 0)::float AS total_commission FROM commissions');
+    const stats = result.rows[0];
+    
+    res.send(`
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+        <title>KS1EGF Admin Dashboard</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body {
+            font-family: system-ui;
+            background: #000;
+            color: #fff;
+            line-height: 1.6;
+            padding: 1.5rem;
+            max-width: 600px;
+            margin: 0 auto;
+          }
+          header {
+            text-align: center;
+            padding: 1.5rem 0;
+            border-bottom: 1px solid #333;
+            margin-bottom: 2rem;
+          }
+          h1 {
+            font-size: 1.8rem;
+            color: #3b82f6;
+          }
+          .card {
+            background: #111;
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+          }
+          .stat {
+            font-size: 2.2rem;
+            font-weight: bold;
+            color: #3b82f6;
+            margin: 0.5rem 0;
+          }
+          .label {
+            color: #aaa;
+            font-size: 0.95rem;
+          }
+          .mission {
+            background: #1e3a8a;
+            border-left: 4px solid #3b82f6;
+            padding: 1.2rem;
+            border-radius: 10px;
+            margin-top: 1.5rem;
+          }
+          .footer {
+            text-align: center;
+            color: #777;
+            font-size: 0.85rem;
+            padding-top: 2rem;
+            border-top: 1px solid #222;
+          }
+        </style>
+      </head>
+      <body>
+        <header>
+          <h1>KS1 Empire Group & Foundation</h1>
+          <p>Admin Dashboard • Transparency Report</p>
+        </header>
+
+        <div class="card">
+          <div class="label">Total Transactions</div>
+          <div class="stat">${stats.total_transactions}</div>
+        </div>
+
+        <div class="card">
+          <div class="label">Total Commissions Earned</div>
+          <div class="stat">GHS ${parseFloat(stats.total_commission).toFixed(2)}</div>
+        </div>
+
+        <div class="mission">
+          <strong>Funds used for:</strong><br/>
+          Empowering African SMEs through digital financial inclusion,<br/>
+          supporting education, innovation, and sustainable development<br/>
+          across Ghana and beyond.
+        </div>
+
+        <div class="footer">
+          © 2026 KS1 Empire Group & Foundation (KS1EGF)<br/>
+          Every transaction fuels our mission.
+        </div>
+      </body>
+      </html>
+    `);
+  } catch (err) {
+    console.error("Admin dashboard error:", err.message);
+    res.status(500).send("Error loading dashboard");
+  }
+});
+
+// === MAIN POS FRONTEND ===
 app.get('/', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -255,6 +362,7 @@ app.get('/', (req, res) => {
   `);
 });
 
+// Start server
 initDB().then(() => {
   const PORT = process.env.PORT || 8080;
   app.listen(PORT, '0.0.0.0', () => {
