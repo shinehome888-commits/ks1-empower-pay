@@ -1,86 +1,101 @@
-// KS1 EMPOWER PAY – PHASE 1 (FULL APP)
-// Nonprofit payment router for African SMEs by KS1 Empire Group & Foundation (KS1EGF)
-// Works on Render.com free tier • Logs every commission • Zero cost • Mobile-first
+// KS1 EMPOWER PAY – PHASE 3.1 (MOCK MOMO + PERSISTENT COMMISSIONS)
+// Ready for real Hubtel integration when approved
 
 const express = require('express');
+const { Pool } = require('pg');
 const app = express();
 app.use(express.json());
 
-let commissions = []; // In-memory storage (Phase 1)
+// === DATABASE ===
+const DB_URL = process.env.DATABASE_URL || 'postgresql://postgres:your_password@db.your_project_id.supabase.co:5432/postgres';
+const pool = new Pool({ connectionString: DB_URL });
 
-// Health check endpoint
+async function initDB() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS commissions (
+      id TEXT PRIMARY KEY,
+      transaction_id TEXT NOT NULL,
+      gross_amount REAL NOT NULL,
+      commission_amount REAL NOT NULL,
+      net_to_merchant REAL NOT NULL,
+      ks1egf_wallet TEXT NOT NULL,
+      currency TEXT DEFAULT 'GHS',
+      payment_method TEXT DEFAULT 'momo',
+      status TEXT DEFAULT 'completed',
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+  console.log("✅ Database ready");
+}
+
+// === MOCK MOMO ENDPOINT ===
+app.post('/api/momo/request', async (req, res) => {
+  const { amount = 100, phone, description = 'Payment' } = req.body;
+  
+  if (!phone || typeof amount !== 'number' || amount <= 0) {
+    return res.status(400).json({ error: 'Invalid phone or amount' });
+  }
+
+  // Simulate MoMo request (in real version: call Hubtel API here)
+  console.log(`📱 MoMo Request: GHS ${amount} to ${phone}`);
+
+  // Wait 3 seconds (simulate customer approval)
+  setTimeout(async () => {
+    const commissionRate = 0.003;
+    const commissionAmount = parseFloat((amount * commissionRate).toFixed(2));
+    const netToMerchant = parseFloat((amount - commissionAmount).toFixed(2));
+    const txId = 'tx_' + Date.now();
+    const commissionId = 'c_' + Date.now();
+
+    try {
+      await pool.query(
+        `INSERT INTO commissions (id, transaction_id, gross_amount, commission_amount, net_to_merchant, ks1egf_wallet, payment_method)
+         VALUES ($1, $2, $3, $4, $5, $6, 'momo')`,
+        [commissionId, txId, amount, commissionAmount, netToMerchant, '+233240254680']
+      );
+      console.log("✅ Commission saved:", commissionId);
+    } catch (err) {
+      console.error("DB_ERROR:", err);
+    }
+  }, 3000);
+
+  // Immediately respond with "request sent"
+  res.json({
+    success: true,
+    message: "Payment request sent to customer's phone",
+    transaction_id: 'mock_tx_' + Date.now(),
+    amount,
+    phone
+  });
+});
+
+// Health check
 app.get('/api/test', (req, res) => {
   res.json({
     status: '✅ LIVE',
     nonprofit: 'KS1 Empire Group & Foundation (KS1EGF)',
     mission: 'Empower African SMEs via micro-commissions',
-    host: 'Render.com (Free Tier)',
-    updated_at: new Date().toISOString()
+    host: 'Render.com + Supabase',
+    momo: 'Mock MoMo active (ready for Hubtel)'
   });
 });
 
-// Process payment → auto-donate micro-commission to KS1EGF
-app.post('/api/payment/transaction', (req, res) => {
-  const { amount = 100, currency = 'GHS', payment_method = 'momo' } = req.body;
-  
-  if (typeof amount !== 'number' || amount <= 0) {
-    return res.status(400).json({ error: 'Invalid amount' });
+// View commissions
+app.get('/api/commissions', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM commissions ORDER BY created_at DESC LIMIT 100');
+    const total = result.rows.reduce((sum, c) => sum + c.commission_amount, 0);
+    res.json({
+      total_commissions_count: result.rows.length,
+      total_commission_amount: parseFloat(total.toFixed(2)),
+      list: result.rows
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Database error' });
   }
-
-  // ⭐ CORE: MICRO-COMMISSION ENGINE (NON-EXPLOITATIVE, TRANSPARENT)
-  const commissionRate = 0.003; // 0.3%
-  const commissionAmount = parseFloat((amount * commissionRate).toFixed(2));
-  const netToMerchant = parseFloat((amount - commissionAmount).toFixed(2));
-
-  const txId = 'tx_' + Date.now();
-  const tx = {
-    id: txId,
-    amount,
-    currency,
-    payment_method,
-    commission_amount: commissionAmount,
-    net_to_merchant: netToMerchant,
-    status: 'success',
-    timestamp: new Date().toISOString()
-  };
-
-  commissions.push({
-    transaction_id: txId,
-    commission_amount: commissionAmount,
-    ks1egf_wallet: '+233240254680',
-    currency,
-    timestamp: tx.timestamp
-  });
-
-  // 🔍 LOG TO CONSOLE (visible in Render logs forever!)
-  console.log("COMMISSION_LOG:", JSON.stringify({
-    type: "micro-commission",
-    gross_amount: amount,
-    commission_amount: commissionAmount,
-    net_to_merchant: netToMerchant,
-    ks1egf_wallet: '+233240254680',
-    timestamp: tx.timestamp
-  }));
-
-  res.json({
-    success: true,
-    ...tx,
-    commission_rate_percent: '0.30',
-    message: 'Commission auto-donated to KS1EGF ❤️'
-  });
 });
 
-// View all commissions (for admin transparency)
-app.get('/api/commissions', (req, res) => {
-  const total = commissions.reduce((sum, c) => sum + c.commission_amount, 0);
-  res.json({
-    total_commissions_count: commissions.length,
-    total_commission_amount: parseFloat(total.toFixed(2)),
-    list: commissions
-  });
-});
-
-// Serve mobile-friendly POS frontend
+// === POS FRONTEND WITH MOMO BUTTON ===
 app.get('/', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -108,7 +123,7 @@ app.get('/', (req, res) => {
         }
         h1 {
           font-size: 1.8rem;
-          background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+          background: linear-gradient(90deg, #3b82f6, #10b981);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           margin-bottom: 0.5rem;
@@ -142,6 +157,9 @@ app.get('/', (req, res) => {
           color: white;
           border: 1px solid #333;
         }
+        .btn-momo {
+          background: linear-gradient(90deg, #10b981, #059669);
+        }
         button {
           background: linear-gradient(90deg, #3b82f6, #2563eb);
           color: white;
@@ -159,6 +177,7 @@ app.get('/', (req, res) => {
           display: none;
         }
         .success { background: #064e3b; border-left: 4px solid #10b981; display: block; }
+        .pending { background: #3730a3; border-left: 4px solid #818cf8; display: block; }
         .error { background: #450a0a; border-left: 4px solid #ef4444; display: block; }
         .footer {
           text-align: center;
@@ -181,16 +200,19 @@ app.get('/', (req, res) => {
 
       <div class="card">
         <h2>Create Payment</h2>
-        <input type="number" id="amount" placeholder="Enter amount in GHS" min="1" value="100"/>
-        <button onclick="createTransaction()">Process Payment</button>
+        <input type="number" id="amount" placeholder="Amount in GHS" min="1" value="100"/>
+        <input type="text" id="phone" placeholder="Customer MoMo number (e.g. +233...)" value="+233240000000"/>
+        <button class="btn-momo" onclick="requestMomo()">Pay via Mobile Money</button>
         <div id="result"></div>
       </div>
 
       <div class="card">
         <h2>How It Works</h2>
-        <p>Every transaction supports <span class="highlight">KS1 Empire Group & Foundation (KS1EGF)</span> with a tiny <span class="highlight">0.3% micro-commission</span>.</p>
-        <p>You keep <span class="highlight">99.7%</span>. We empower millions of African SMEs.</p>
-        <p><small>Example: GHS 100 → GHS 0.30 to KS1EGF, GHS 99.70 to you.</small></p>
+        <p>1. Enter amount + customer's MoMo number<br/>
+           2. Click "Pay via Mobile Money"<br/>
+           3. Customer approves on their phone<br/>
+           4. You receive funds — <span class="highlight">0.3% supports KS1EGF</span></p>
+        <p><small>Currently in mock mode. Real MoMo coming soon!</small></p>
       </div>
 
       <div class="footer">
@@ -199,60 +221,77 @@ app.get('/', (req, res) => {
       </div>
 
       <script>
-        async function createTransaction() {
-          const input = document.getElementById('amount');
-          const amount = parseFloat(input.value);
+        async function requestMomo() {
+          const amount = parseFloat(document.getElementById('amount').value);
+          const phone = document.getElementById('phone').value.trim();
           const resultDiv = document.getElementById('result');
           
           if (!amount || amount <= 0) {
-            resultDiv.className = 'error';
-            resultDiv.innerHTML = 'Please enter a valid amount';
-            resultDiv.style.display = 'block';
+            showError('Please enter a valid amount');
+            return;
+          }
+          if (!phone.startsWith('+233')) {
+            showError('Enter a Ghanaian MoMo number (+233...)');
             return;
           }
 
+          showPending('Sending payment request to ' + phone + '...');
+
           try {
-            const res = await fetch('/api/payment/transaction', {
+            const res = await fetch('/api/momo/request', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ amount })
+              body: JSON.stringify({ amount, phone })
             });
             
             const data = await res.json();
-            const result = document.getElementById('result');
-            
             if (data.success) {
-              result.className = 'success';
-              result.innerHTML = \`
-                <strong>✅ Payment Processed!</strong><br/><br/>
-                Gross Amount: <span class="highlight">GHS \${data.amount}</span><br/>
-                KS1EGF Commission: <span class="highlight">GHS \${data.commission_amount}</span><br/>
-                You Receive: <span class="highlight">GHS \${data.net_to_merchant}</span>
-              \`;
+              showPending('✅ Request sent! Waiting for customer approval...');
+              // Simulate auto-complete after 4 seconds
+              setTimeout(() => {
+                showSuccess(\`
+                  <strong>🎉 Payment Completed!</strong><br/><br/>
+                  Amount: <span class="highlight">GHS \${amount}</span><br/>
+                  KS1EGF Commission: <span class="highlight">GHS \${(amount * 0.003).toFixed(2)}</span>
+                \`);
+              }, 4000);
             } else {
-              result.className = 'error';
-              result.innerHTML = '❌ Error: ' + (data.error || 'Unknown');
+              showError('❌ ' + (data.error || 'Request failed'));
             }
-            result.style.display = 'block';
           } catch (err) {
-            const result = document.getElementById('result');
-            result.className = 'error';
-            result.innerHTML = '❌ Network error. Please try again.';
-            result.style.display = 'block';
+            showError('❌ Network error. Please try again.');
           }
         }
 
-        document.getElementById('amount').addEventListener('keypress', (e) => {
-          if (e.key === 'Enter') createTransaction();
-        });
+        function showPending(msg) {
+          const r = document.getElementById('result');
+          r.className = 'pending';
+          r.innerHTML = msg;
+          r.style.display = 'block';
+        }
+
+        function showSuccess(html) {
+          const r = document.getElementById('result');
+          r.className = 'success';
+          r.innerHTML = html;
+          r.style.display = 'block';
+        }
+
+        function showError(msg) {
+          const r = document.getElementById('result');
+          r.className = 'error';
+          r.innerHTML = msg;
+          r.style.display = 'block';
+        }
       </script>
     </body>
     </html>
   `);
 });
 
-// Start server (Render uses dynamic PORT)
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
-  console.log(`🚀 KS1 Empower Pay running on port ${PORT}`);
+initDB().then(() => {
+  const PORT = process.env.PORT || 8080;
+  app.listen(PORT, () => {
+    console.log(\`🚀 KS1 Empower Pay running on port \${PORT}\`);
+  });
 });
