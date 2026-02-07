@@ -1,29 +1,26 @@
 // KS1 EMPOWER PAY – PHASE 3.1 (ALL-IN-ONE)
 // Nonprofit payment platform for African SMEs by KS1 Empire Group & Foundation (KS1EGF)
-// Free • Persistent • Mobile Money Ready
 
 const express = require('express');
 const { Pool } = require('pg');
 const app = express();
 app.use(express.json());
 
-// === DATABASE SETUP ===
-// ONLY use environment variable — never hardcode passwords in code
+// ONLY use environment variable — never hardcode
 const DB_URL = process.env.DATABASE_URL;
 
 if (!DB_URL) {
-  console.error("❌ FATAL: DATABASE_URL not set in environment");
+  console.error("❌ FATAL: DATABASE_URL not set in Render Environment");
   process.exit(1);
 }
 
 const pool = new Pool({
   connectionString: DB_URL,
   ssl: {
-    rejectUnauthorized: false // Required for Supabase on Render
+    rejectUnauthorized: false
   }
 });
 
-// Safe database init (won't crash app)
 async function initDB() {
   try {
     await pool.query(`
@@ -44,22 +41,18 @@ async function initDB() {
     return true;
   } catch (err) {
     console.error("❌ Database error:", err.message);
-    console.error("💡 Check DATABASE_URL in Render Environment");
     return false;
   }
 }
 
-// === MOCK MOMO ENDPOINT ===
 app.post('/api/momo/request', async (req, res) => {
-  const { amount = 100, phone, description = 'Payment' } = req.body;
-  
+  const { amount = 100, phone } = req.body;
   if (!phone || typeof amount !== 'number' || amount <= 0) {
     return res.status(400).json({ error: 'Invalid phone or amount' });
   }
 
   console.log(`📱 MoMo Request: GHS ${amount} to ${phone}`);
 
-  // Simulate customer approval after 3 seconds
   setTimeout(async () => {
     const commissionRate = 0.003;
     const commissionAmount = parseFloat((amount * commissionRate).toFixed(2));
@@ -88,18 +81,14 @@ app.post('/api/momo/request', async (req, res) => {
   });
 });
 
-// Health check
 app.get('/api/test', (req, res) => {
   res.json({
     status: '✅ LIVE',
     nonprofit: 'KS1 Empire Group & Foundation (KS1EGF)',
-    mission: 'Empower African SMEs via micro-commissions',
-    host: 'Render.com + Supabase',
-    momo: 'Mock MoMo active (ready for Hubtel)'
+    mission: 'Empower African SMEs via micro-commissions'
   });
 });
 
-// View all commissions
 app.get('/api/commissions', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM commissions ORDER BY created_at DESC LIMIT 100');
@@ -114,7 +103,6 @@ app.get('/api/commissions', async (req, res) => {
   }
 });
 
-// Serve POS frontend
 app.get('/', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -126,7 +114,7 @@ app.get('/', (req, res) => {
       <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          font-family: system-ui;
           background: #000;
           color: #fff;
           line-height: 1.6;
@@ -145,11 +133,6 @@ app.get('/', (req, res) => {
           background: linear-gradient(90deg, #3b82f6, #10b981);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
-          margin-bottom: 0.5rem;
-        }
-        .subtitle {
-          color: #aaa;
-          font-size: 0.95rem;
         }
         .card {
           background: #111;
@@ -157,11 +140,6 @@ app.get('/', (req, res) => {
           padding: 1.5rem;
           margin-bottom: 1.5rem;
           box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        }
-        .card h2 {
-          margin-bottom: 1rem;
-          font-size: 1.3rem;
-          color: #3b82f6;
         }
         input, button {
           width: 100%;
@@ -183,11 +161,6 @@ app.get('/', (req, res) => {
           background: linear-gradient(90deg, #3b82f6, #2563eb);
           color: white;
           font-weight: bold;
-          cursor: pointer;
-          transition: opacity 0.2s;
-        }
-        button:hover {
-          opacity: 0.9;
         }
         #result {
           margin-top: 1rem;
@@ -205,10 +178,6 @@ app.get('/', (req, res) => {
           padding-top: 1.5rem;
           border-top: 1px solid #222;
         }
-        .highlight {
-          color: #3b82f6;
-          font-weight: bold;
-        }
       </style>
     </head>
     <body>
@@ -225,15 +194,6 @@ app.get('/', (req, res) => {
         <div id="result"></div>
       </div>
 
-      <div class="card">
-        <h2>How It Works</h2>
-        <p>1. Enter amount + customer's MoMo number<br/>
-           2. Click "Pay via Mobile Money"<br/>
-           3. Customer approves on their phone<br/>
-           4. You receive funds — <span class="highlight">0.3% supports KS1EGF</span></p>
-        <p><small>Currently in mock mode. Real MoMo coming soon!</small></p>
-      </div>
-
       <div class="footer">
         © 2026 KS1 Empire Group & Foundation (KS1EGF)<br/>
         Built with love for every African entrepreneur.
@@ -243,18 +203,18 @@ app.get('/', (req, res) => {
         async function requestMomo() {
           const amount = parseFloat(document.getElementById('amount').value);
           const phone = document.getElementById('phone').value.trim();
-          const resultDiv = document.getElementById('result');
+          const r = document.getElementById('result');
           
-          if (!amount || amount <= 0) {
-            showError('Please enter a valid amount');
-            return;
-          }
-          if (!phone.startsWith('+233')) {
-            showError('Enter a Ghanaian MoMo number (+233...)');
+          if (!amount || amount <= 0 || !phone.startsWith('+233')) {
+            r.className = 'error';
+            r.innerHTML = 'Enter valid GHS amount and +233 number';
+            r.style.display = 'block';
             return;
           }
 
-          showPending('Sending payment request to ' + phone + '...');
+          r.className = 'pending';
+          r.innerHTML = 'Sending request to ' + phone + '...';
+          r.style.display = 'block';
 
           try {
             const res = await fetch('/api/momo/request', {
@@ -262,44 +222,20 @@ app.get('/', (req, res) => {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ amount, phone })
             });
-            
             const data = await res.json();
             if (data.success) {
-              showPending('✅ Request sent! Waiting for customer approval...');
+              r.className = 'pending';
+              r.innerHTML = '✅ Request sent! Waiting for approval...';
               setTimeout(() => {
-                showSuccess(\`
-                  <strong>🎉 Payment Completed!</strong><br/><br/>
-                  Amount: <span class="highlight">GHS \${amount}</span><br/>
-                  KS1EGF Commission: <span class="highlight">GHS \${(amount * 0.003).toFixed(2)}</span>
-                \`);
+                r.className = 'success';
+                r.innerHTML = '<strong>🎉 Payment Completed!</strong><br/>Commission: GHS ' + (amount * 0.003).toFixed(2);
               }, 4000);
-            } else {
-              showError('❌ ' + (data.error || 'Request failed'));
             }
-          } catch (err) {
-            showError('❌ Network error. Please try again.');
+          } catch (e) {
+            r.className = 'error';
+            r.innerHTML = '❌ Network error';
+            r.style.display = 'block';
           }
-        }
-
-        function showPending(msg) {
-          const r = document.getElementById('result');
-          r.className = 'pending';
-          r.innerHTML = msg;
-          r.style.display = 'block';
-        }
-
-        function showSuccess(html) {
-          const r = document.getElementById('result');
-          r.className = 'success';
-          r.innerHTML = html;
-          r.style.display = 'block';
-        }
-
-        function showError(msg) {
-          const r = document.getElementById('result');
-          r.className = 'error';
-          r.innerHTML = msg;
-          r.style.display = 'block';
         }
       </script>
     </body>
@@ -307,14 +243,9 @@ app.get('/', (req, res) => {
   `);
 });
 
-// Start server
-initDB().then((dbReady) => {
+initDB().then(() => {
   const PORT = process.env.PORT || 8080;
   app.listen(PORT, '0.0.0.0', () => {
-    if (dbReady) {
-      console.log(`🚀 KS1 Empower Pay running on port ${PORT}`);
-    } else {
-      console.log(`⚠️  App running WITHOUT database (commissions will not save)`);
-    }
+    console.log(`🚀 KS1 Empower Pay running on port ${PORT}`);
   });
 });
