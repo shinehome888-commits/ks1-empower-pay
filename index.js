@@ -47,7 +47,7 @@ app.post('/api/payment/transaction', (req, res) => {
   commissions.push({
     transaction_id: txId,
     commission_amount: commissionAmount,
-    ks1egf_wallet: '+233240254680', // ← UPDATE IF NEEDED
+    ks1egf_wallet: '+233240254680',
     currency,
     timestamp: tx.timestamp
   });
@@ -254,5 +254,5 @@ app.get('/', (req, res) => {
 // Start server (Render uses dynamic PORT)
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
-  console.log(\`🚀 KS1 Empower Pay running on port \${PORT}\`);
+  console.log(`🚀 KS1 Empower Pay running on port ${PORT}`);
 });
