@@ -1,5 +1,6 @@
-// KS1 EMPOWER PAY – ALKEBULAN EDITION
+// KS1 EMPOWER PAY – ALKEBULAN EDITION (SUSTAINABLE MODEL)
 // Non-custodial • Alkebulan-first • Nonprofit-powered
+// 0.3% covers Hubtel fee + funds KS1EGF mission
 
 const express = require('express');
 const { Pool } = require('pg');
@@ -223,7 +224,7 @@ app.get('/', (req, res) => {
 
       <div class="footer">
         © 2026 KS1 Empire Group & Foundation (KS1EGF)<br/>
-        Built with love for every Alkebulan (AFRICA) entrepreneur.
+        A 0.3% solidarity contribution covers processing and funds Alkebulan digital freedom.
       </div>
 
       <script>
@@ -253,7 +254,7 @@ app.get('/', (req, res) => {
                 <div style="font-family: monospace; font-size: 0.95rem;">
                   <strong>📄 TRANSACTION RECEIPT</strong><br/><br/>
                   Gross Amount: GHS \${data.amount}<br/>
-                  KS1EGF Commission (0.3%): GHS \${(data.amount * 0.003).toFixed(2)}<br/>
+                  Solidarity Contribution (0.3%): GHS \${(data.amount * 0.003).toFixed(2)}<br/>
                   You Receive: GHS \${(data.amount * 0.997).toFixed(2)}<br/>
                   Status: Completed<br/>
                   Timestamp: \${new Date().toLocaleString()}
@@ -274,10 +275,10 @@ app.get('/', (req, res) => {
   `);
 });
 
-// === START SERVER (RENDER-COMPLIANT) ===
+// === RENDER-COMPLIANT SERVER START ===
 const PORT = parseInt(process.env.PORT, 10) || 10000;
 initDB().then(() => {
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 KS1 Empower Pay running on port ${PORT}`);
+    console.log(\`🚀 KS1 Empower Pay running on port \${PORT}\`);
   });
 });
