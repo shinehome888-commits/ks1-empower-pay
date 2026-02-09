@@ -1,6 +1,6 @@
-// KS1 EMPOWER PAY – ALKEBULAN EDITION (SUSTAINABLE MODEL)
+// KS1 EMPOWER PAY – ALKEBULAN EDITION (RENDER-SAFE)
 // Non-custodial • Alkebulan-first • Nonprofit-powered
-// 0.3% covers Hubtel fee + funds KS1EGF mission
+// 0.3% solidarity contribution covers Hubtel fee + funds mission
 
 const express = require('express');
 const { Pool } = require('pg');
@@ -279,6 +279,6 @@ app.get('/', (req, res) => {
 const PORT = parseInt(process.env.PORT, 10) || 10000;
 initDB().then(() => {
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(\`🚀 KS1 Empower Pay running on port \${PORT}\`);
+    console.log(`🚀 KS1 Empower Pay running on port ${PORT}`);
   });
 });
