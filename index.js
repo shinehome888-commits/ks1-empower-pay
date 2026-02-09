@@ -1,5 +1,5 @@
-// KS1 EMPOWER PAY – FINAL PRODUCTION VERSION
-// Africa-first • Nonprofit-powered • Render-optimized • Hubtel-ready
+// KS1 EMPOWER PAY – ALKEBULAN EDITION
+// Non-custodial • Alkebulan-first • Nonprofit-powered
 
 const express = require('express');
 const { Pool } = require('pg');
@@ -87,7 +87,7 @@ app.get('/api/commissions', async (req, res) => {
   }
 });
 
-// === MAIN FRONTEND WITH YELLOW GOLD BRANDING ===
+// === MAIN FRONTEND WITH ALKEBULAN BRANDING ===
 app.get('/', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -119,13 +119,17 @@ app.get('/', (req, res) => {
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
         }
+        /* ✨ WHITE BOLD 3D MISSION */
         .subtitle {
-          color: #FFD700; /* YELLOW GOLD */
-          font-size: 1.05rem;
-          font-weight: 600;
-          letter-spacing: 0.5px;
-          margin-top: 0.4rem;
-          text-shadow: 0 0 6px rgba(255, 215, 0, 0.3);
+          color: #fff; /* White */
+          font-size: 1.1rem;
+          font-weight: 800;
+          letter-spacing: 0.8px;
+          margin-top: 0.5rem;
+          text-shadow: 
+            0 2px 0 #555,
+            0 4px 8px rgba(0,0,0,0.6);
+          text-transform: uppercase;
         }
         .card {
           background: #111;
@@ -136,7 +140,7 @@ app.get('/', (req, res) => {
           border: 1px solid #222;
         }
         .card h2 {
-          color: #FFD700; /* YELLOW GOLD */
+          color: #FFD700; /* Yellow gold */
           font-size: 1.35rem;
           margin-bottom: 1.1rem;
           font-weight: 700;
@@ -207,20 +211,20 @@ app.get('/', (req, res) => {
     <body>
       <header>
         <h1>KS1 Empower Pay</h1>
-        <p class="subtitle">Non-custodial • Africa-first • Nonprofit-powered</p>
+        <p class="subtitle">Non-custodial • Alkebulan-first • Nonprofit-powered</p>
       </header>
 
       <div class="card">
         <h2>Create Payment</h2>
         <input type="number" id="amount" placeholder="Amount in GHS" min="1" value="100"/>
         <input type="text" id="phone" placeholder="Customer MoMo number (e.g. +233...)" value="+233240000000"/>
-        <button class="btn-momo" onclick="requestMomo()">Pay & Empower Africa 💛</button>
+        <button class="btn-momo" onclick="requestMomo()">Pay & Empower Alkebulan 💛</button>
         <div id="result"></div>
       </div>
 
       <div class="footer">
         © 2026 KS1 Empire Group & Foundation (KS1EGF)<br/>
-        Built with love for every African entrepreneur.
+        Built with love for every Alkebulan (AFRICA) entrepreneur.
       </div>
 
       <script>
@@ -246,7 +250,20 @@ app.get('/', (req, res) => {
             });
             const data = await res.json();
             if (data.success) {
-              r.innerHTML = '<strong>🎉 Payment Completed!</strong><br/>You just empowered African digital freedom!<br/><small>Commission to KS1EGF: GHS ' + (amount * 0.003).toFixed(2) + '</small>';
+              // ✅ TRANSPARENT RECEIPT FIRST
+              const receipt = \`
+                <div style="font-family: monospace; font-size: 0.95rem;">
+                  <strong>📄 TRANSACTION RECEIPT</strong><br/><br/>
+                  Gross Amount: GHS \${data.amount}<br/>
+                  KS1EGF Commission (0.3%): GHS \${(data.amount * 0.003).toFixed(2)}<br/>
+                  You Receive: GHS \${(data.amount * 0.997).toFixed(2)}<br/>
+                  Status: Completed<br/>
+                  Timestamp: \${new Date().toLocaleString()}
+                </div>
+                <br/>
+                You just empowered Alkebulan (AFRICA) digital freedom!
+              \`;
+              r.innerHTML = '<strong>🎉 Payment Completed!</strong><br/>' + receipt;
             }
           } catch (e) {
             r.innerHTML = '❌ Network error';
@@ -263,6 +280,6 @@ app.get('/', (req, res) => {
 const PORT = parseInt(process.env.PORT, 10) || 10000;
 initDB().then(() => {
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 KS1 Empower Pay running on port ${PORT}`);
+    console.log(\`🚀 KS1 Empower Pay running on port \${PORT}\`);
   });
 });
