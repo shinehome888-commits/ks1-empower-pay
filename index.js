@@ -1,108 +1,3 @@
-// KS1 EMPOWER PAY – PHASE 3.1 (ALL-IN-ONE)
-// Nonprofit payment platform for African SMEs by KS1 Empire Group & Foundation (KS1EGF)
-
-const express = require('express');
-const { Pool } = require('pg');
-const app = express();
-app.use(express.json());
-
-// ONLY use environment variable — never hardcode
-const DB_URL = process.env.DATABASE_URL;
-
-if (!DB_URL) {
-  console.error("❌ FATAL: DATABASE_URL not set in Render Environment");
-  process.exit(1);
-}
-
-const pool = new Pool({
-  connectionString: DB_URL,
-  ssl: {
-    rejectUnauthorized: false
-  }
-});
-
-async function initDB() {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS commissions (
-        id TEXT PRIMARY KEY,
-        transaction_id TEXT NOT NULL,
-        gross_amount REAL NOT NULL,
-        commission_amount REAL NOT NULL,
-        net_to_merchant REAL NOT NULL,
-        ks1egf_wallet TEXT NOT NULL DEFAULT '+233240254680',
-        currency TEXT DEFAULT 'GHS',
-        payment_method TEXT DEFAULT 'momo',
-        status TEXT DEFAULT 'completed',
-        created_at TIMESTAMPTZ DEFAULT NOW()
-      )
-    `);
-    console.log("✅ Database ready");
-    return true;
-  } catch (err) {
-    console.error("❌ Database error:", err.message);
-    return false;
-  }
-}
-
-app.post('/api/momo/request', async (req, res) => {
-  const { amount = 100, phone } = req.body;
-  if (!phone || typeof amount !== 'number' || amount <= 0) {
-    return res.status(400).json({ error: 'Invalid phone or amount' });
-  }
-
-  console.log(`📱 MoMo Request: GHS ${amount} to ${phone}`);
-
-  setTimeout(async () => {
-    const commissionRate = 0.003;
-    const commissionAmount = parseFloat((amount * commissionRate).toFixed(2));
-    const netToMerchant = parseFloat((amount - commissionAmount).toFixed(2));
-    const txId = 'tx_' + Date.now();
-    const commissionId = 'c_' + Date.now();
-
-    try {
-      await pool.query(
-        `INSERT INTO commissions (id, transaction_id, gross_amount, commission_amount, net_to_merchant, payment_method)
-         VALUES ($1, $2, $3, $4, $5, 'momo')`,
-        [commissionId, txId, amount, commissionAmount, netToMerchant]
-      );
-      console.log("✅ Commission saved:", commissionId);
-    } catch (err) {
-      console.error("DB_SAVE_ERROR:", err.message);
-    }
-  }, 3000);
-
-  res.json({
-    success: true,
-    message: "Payment request sent to customer's phone",
-    transaction_id: 'mock_tx_' + Date.now(),
-    amount,
-    phone
-  });
-});
-
-app.get('/api/test', (req, res) => {
-  res.json({
-    status: '✅ LIVE',
-    nonprofit: 'KS1 Empire Group & Foundation (KS1EGF)',
-    mission: 'Empower African SMEs via micro-commissions'
-  });
-});
-
-app.get('/api/commissions', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM commissions ORDER BY created_at DESC LIMIT 100');
-    const total = result.rows.reduce((sum, c) => sum + c.commission_amount, 0);
-    res.json({
-      total_commissions_count: result.rows.length,
-      total_commission_amount: parseFloat(total.toFixed(2)),
-      list: result.rows
-    });
-  } catch (err) {
-    res.status(500).json({ error: 'Database unavailable' });
-  }
-});
-
 app.get('/', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -210,7 +105,7 @@ app.get('/', (req, res) => {
             0 0 0 #B8860B,
             0 4px 8px rgba(0, 0, 0, 0.3);
         }
-        /* Result area */
+        /* Result area in deep blue with gold accents */
         #result {
           margin-top: 1.2rem;
           padding: 1.2rem;
@@ -290,11 +185,4 @@ app.get('/', (req, res) => {
     </body>
     </html>
   `);
-});
-
-initDB().then(() => {
-  const PORT = process.env.PORT || 8080;
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 KS1 Empower Pay running on port ${PORT}`);
-  });
 });
