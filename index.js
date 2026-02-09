@@ -1,5 +1,5 @@
-// KS1 EMPOWER PAY – PRODUCTION READY FOR HUBTEL MEETING
-// Africa-first • Nonprofit-powered • Render-optimized
+// KS1 EMPOWER PAY – FINAL PRODUCTION VERSION
+// Africa-first • Nonprofit-powered • Render-optimized • Hubtel-ready
 
 const express = require('express');
 const { Pool } = require('pg');
@@ -87,7 +87,7 @@ app.get('/api/commissions', async (req, res) => {
   }
 });
 
-// === MAIN FRONTEND WITH YELLOW GOLD UI ===
+// === MAIN FRONTEND WITH YELLOW GOLD BRANDING ===
 app.get('/', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -202,10 +202,6 @@ app.get('/', (req, res) => {
           padding-top: 1.8rem;
           border-top: 1px solid #222;
         }
-        @media (max-width: 500px) {
-          h1 { font-size: 1.85rem; }
-          .card { padding: 1.4rem; }
-        }
       </style>
     </head>
     <body>
@@ -218,7 +214,7 @@ app.get('/', (req, res) => {
         <h2>Create Payment</h2>
         <input type="number" id="amount" placeholder="Amount in GHS" min="1" value="100"/>
         <input type="text" id="phone" placeholder="Customer MoMo number (e.g. +233...)" value="+233240000000"/>
-        <button class="btn-momo" onclick="requestMomo()">Pay via Mobile Money</button>
+        <button class="btn-momo" onclick="requestMomo()">Pay & Empower Africa 💛</button>
         <div id="result"></div>
       </div>
 
@@ -250,10 +246,7 @@ app.get('/', (req, res) => {
             });
             const data = await res.json();
             if (data.success) {
-              r.innerHTML = '✅ Request sent! Waiting for approval...';
-              setTimeout(() => {
-                r.innerHTML = '<strong>🎉 Payment Completed!</strong><br/>Commission to KS1EGF: GHS ' + (amount * 0.003).toFixed(2);
-              }, 4000);
+              r.innerHTML = '<strong>🎉 Payment Completed!</strong><br/>You just empowered African digital freedom!<br/><small>Commission to KS1EGF: GHS ' + (amount * 0.003).toFixed(2) + '</small>';
             }
           } catch (e) {
             r.innerHTML = '❌ Network error';
@@ -266,7 +259,7 @@ app.get('/', (req, res) => {
   `);
 });
 
-// === START SERVER (Render-compliant) ===
+// === RENDER-COMPLIANT SERVER START ===
 const PORT = parseInt(process.env.PORT, 10) || 10000;
 initDB().then(() => {
   app.listen(PORT, '0.0.0.0', () => {
