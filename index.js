@@ -1,15 +1,15 @@
-// KS1 EMPOWER PAY – COMPLETE WORKING VERSION
-// Modern UI • Yellow Gold Branding • Supabase • Render-Ready
+// KS1 EMPOWER PAY – PRODUCTION READY FOR HUBTEL MEETING
+// Africa-first • Nonprofit-powered • Render-optimized
 
 const express = require('express');
 const { Pool } = require('pg');
 const app = express();
 app.use(express.json());
 
-// Database setup
+// === DATABASE SETUP ===
 const DB_URL = process.env.DATABASE_URL;
 if (!DB_URL) {
-  console.error("❌ DATABASE_URL missing in Render Environment");
+  console.error("❌ FATAL: DATABASE_URL not set in Render Environment");
   process.exit(1);
 }
 
@@ -18,7 +18,6 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
-// Initialize database
 async function initDB() {
   try {
     await pool.query(`
@@ -37,11 +36,11 @@ async function initDB() {
     `);
     console.log("✅ Database ready");
   } catch (err) {
-    console.error("❌ DB Error:", err.message);
+    console.error("❌ Database error:", err.message);
   }
 }
 
-// API: Mock MoMo payment
+// === MOCK MOMO API ===
 app.post('/api/momo/request', async (req, res) => {
   const { amount = 100, phone } = req.body;
   if (!phone || typeof amount !== 'number' || amount <= 0) {
@@ -78,7 +77,7 @@ app.get('/api/test', (req, res) => {
   res.json({ status: '✅ LIVE', nonprofit: 'KS1 Empire Group & Foundation' });
 });
 
-// Admin stats
+// Commission stats
 app.get('/api/commissions', async (req, res) => {
   try {
     const result = await pool.query('SELECT COUNT(*)::int AS count, COALESCE(SUM(commission_amount),0)::float AS total FROM commissions');
@@ -88,7 +87,7 @@ app.get('/api/commissions', async (req, res) => {
   }
 });
 
-// MAIN FRONTEND WITH YELLOW GOLD UI
+// === MAIN FRONTEND WITH YELLOW GOLD UI ===
 app.get('/', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -100,16 +99,22 @@ app.get('/', (req, res) => {
       <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-          font-family: system-ui;
+          font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
           background: #000;
           color: #fff;
+          line-height: 1.6;
           padding: 1.5rem;
           max-width: 600px;
           margin: 0 auto;
         }
-        header { text-align: center; padding: 1.8rem 0; margin-bottom: 2rem; }
+        header {
+          text-align: center;
+          padding: 1.6rem 0;
+          margin-bottom: 1.8rem;
+        }
         h1 {
-          font-size: 2.2rem;
+          font-size: 2.1rem;
+          font-weight: 800;
           background: linear-gradient(90deg, #3b82f6, #8b5cf6);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
@@ -118,65 +123,88 @@ app.get('/', (req, res) => {
           color: #FFD700; /* YELLOW GOLD */
           font-size: 1.05rem;
           font-weight: 600;
-          text-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+          letter-spacing: 0.5px;
+          margin-top: 0.4rem;
+          text-shadow: 0 0 6px rgba(255, 215, 0, 0.3);
         }
         .card {
-          background: rgba(20, 20, 25, 0.85);
-          border-radius: 20px;
-          padding: 1.8rem;
-          margin-bottom: 1.8rem;
-          box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+          background: #111;
+          border-radius: 18px;
+          padding: 1.7rem;
+          margin-bottom: 1.7rem;
+          box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+          border: 1px solid #222;
         }
         .card h2 {
           color: #FFD700; /* YELLOW GOLD */
-          font-size: 1.4rem;
-          margin-bottom: 1.2rem;
+          font-size: 1.35rem;
+          margin-bottom: 1.1rem;
           font-weight: 700;
+          text-shadow: 0 0 5px rgba(255, 215, 0, 0.25);
         }
         input, button {
           width: 100%;
-          padding: 0.95rem;
+          padding: 0.9rem;
           margin: 0.6rem 0;
           border: none;
           border-radius: 12px;
-          font-size: 1.05rem;
+          font-size: 1.02rem;
         }
         input {
           background: #1a1a1f;
           color: white;
           border: 1px solid #333;
+          outline: none;
+        }
+        input:focus {
+          border-color: #FFD700;
+          box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.2);
         }
         .btn-momo {
           background: linear-gradient(135deg, #FFD700, #D4AF37);
           color: #000;
           font-weight: 800;
           text-transform: uppercase;
-          box-shadow: 0 6px 0 #B8860B, 0 8px 16px rgba(0,0,0,0.4);
+          letter-spacing: 0.5px;
+          font-size: 1.08rem;
+          box-shadow: 
+            0 5px 0 #B8860B,
+            0 7px 14px rgba(0,0,0,0.4);
+          transition: all 0.15s ease;
         }
         .btn-momo:hover {
           background: linear-gradient(135deg, #FFE04D, #E6C24A);
           transform: translateY(2px);
-          box-shadow: 0 4px 0 #B8860B, 0 6px 12px rgba(0,0,0,0.4);
+          box-shadow: 
+            0 3px 0 #B8860B,
+            0 5px 12px rgba(0,0,0,0.4);
         }
         .btn-momo:active {
-          transform: translateY(6px);
-          box-shadow: 0 0 0 #B8860B, 0 4px 8px rgba(0,0,0,0.3);
+          transform: translateY(5px);
+          box-shadow: 
+            0 0 0 #B8860B,
+            0 3px 8px rgba(0,0,0,0.3);
         }
         #result {
-          margin-top: 1.2rem;
-          padding: 1.2rem;
+          margin-top: 1.1rem;
+          padding: 1.1rem;
           border-radius: 12px;
           display: none;
-          background: rgba(15, 23, 42, 0.7);
+          background: #1e3a8a;
           border-left: 4px solid #3b82f6;
           color: #dbeafe;
+          font-weight: 600;
         }
         .footer {
           text-align: center;
           color: #777;
           font-size: 0.85rem;
-          padding-top: 2rem;
+          padding-top: 1.8rem;
           border-top: 1px solid #222;
+        }
+        @media (max-width: 500px) {
+          h1 { font-size: 1.85rem; }
+          .card { padding: 1.4rem; }
         }
       </style>
     </head>
@@ -238,9 +266,9 @@ app.get('/', (req, res) => {
   `);
 });
 
-// Start server
+// === START SERVER (Render-compliant) ===
+const PORT = parseInt(process.env.PORT, 10) || 10000;
 initDB().then(() => {
-  const PORT = process.env.PORT || 10000;
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 KS1 Empower Pay running on port ${PORT}`);
   });
