@@ -87,7 +87,7 @@ app.get('/api/commissions', async (req, res) => {
   }
 });
 
-// === MAIN FRONTEND WITH ALKEBULAN BRANDING ===
+// === MAIN FRONTEND ===
 app.get('/', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -119,9 +119,8 @@ app.get('/', (req, res) => {
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
         }
-        /* ✨ WHITE BOLD 3D MISSION */
         .subtitle {
-          color: #fff; /* White */
+          color: #fff;
           font-size: 1.1rem;
           font-weight: 800;
           letter-spacing: 0.8px;
@@ -140,7 +139,7 @@ app.get('/', (req, res) => {
           border: 1px solid #222;
         }
         .card h2 {
-          color: #FFD700; /* Yellow gold */
+          color: #FFD700;
           font-size: 1.35rem;
           margin-bottom: 1.1rem;
           font-weight: 700;
@@ -250,7 +249,6 @@ app.get('/', (req, res) => {
             });
             const data = await res.json();
             if (data.success) {
-              // ✅ TRANSPARENT RECEIPT FIRST
               const receipt = \`
                 <div style="font-family: monospace; font-size: 0.95rem;">
                   <strong>📄 TRANSACTION RECEIPT</strong><br/><br/>
@@ -276,10 +274,10 @@ app.get('/', (req, res) => {
   `);
 });
 
-// === RENDER-COMPLIANT SERVER START ===
+// === START SERVER (RENDER-COMPLIANT) ===
 const PORT = parseInt(process.env.PORT, 10) || 10000;
 initDB().then(() => {
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(\`🚀 KS1 Empower Pay running on port \${PORT}\`);
+    console.log(`🚀 KS1 Empower Pay running on port ${PORT}`);
   });
 });
