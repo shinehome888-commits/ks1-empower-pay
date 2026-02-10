@@ -651,18 +651,18 @@ app.get('/app', (req, res) => {
             });
             const data = await res.json();
             if (data.success) {
-              const receipt = \`
-                <div style="font-family: monospace; font-size: 0.95rem;">
-                  <strong>📄 TRANSACTION RECEIPT</strong><br/><br/>
-                  Gross Amount: GHS \${data.amount}<br/>
-                  Solidarity Contribution (0.3%): GHS \${(data.amount * 0.003).toFixed(2)}<br/>
-                  You Receive: GHS \${(data.amount * 0.997).toFixed(2)}<br/>
-                  Status: Completed<br/>
-                  Timestamp: \${new Date().toLocaleString()}
-                </div>
-                <br/>
-                You just empowered Alkebulan (AFRICA) digital freedom!
-              \`;
+              // ✅ SAFE STRING CONCATENATION — NO TEMPLATE LITERALS
+              const receipt = 
+                '<div style="font-family: monospace; font-size: 0.95rem;">' +
+                  '<strong>📄 TRANSACTION RECEIPT</strong><br/><br/>' +
+                  'Gross Amount: GHS ' + data.amount + '<br/>' +
+                  'Solidarity Contribution (0.3%): GHS ' + (data.amount * 0.003).toFixed(2) + '<br/>' +
+                  'You Receive: GHS ' + (data.amount * 0.997).toFixed(2) + '<br/>' +
+                  'Status: Completed<br/>' +
+                  'Timestamp: ' + new Date().toLocaleString() +
+                '</div>' +
+                '<br/>' +
+                'You just empowered Alkebulan (AFRICA) digital freedom!';
               r.innerHTML = '<strong>🎉 Payment Completed!</strong><br/>' + receipt;
             }
           } catch (e) {
