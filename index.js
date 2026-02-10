@@ -25,7 +25,6 @@ const pool = new Pool({
 
 async function initDB() {
   try {
-    // Create commissions table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS commissions (
         id TEXT PRIMARY KEY,
@@ -40,7 +39,6 @@ async function initDB() {
         created_at TIMESTAMPTZ DEFAULT NOW()
       )
     `);
-    // Create merchants table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS merchants (
         id TEXT PRIMARY KEY,
@@ -55,14 +53,14 @@ async function initDB() {
   }
 }
 
-// === REGISTER MERCHANT (FIXED) ===
+// === REGISTER MERCHANT ===
 app.post('/api/register', async (req, res) => {
   const { whatsapp, password } = req.body;
   if (!whatsapp || !password || !whatsapp.startsWith('+233') || password.length < 4) {
     return res.status(400).json({ error: 'Invalid input' });
   }
 
-  const passwordHash = password; // ⚠️ In production: use bcrypt
+  const passwordHash = password;
   const id = 'm_' + Date.now();
 
   try {
@@ -370,7 +368,8 @@ app.get('/', (req, res) => {
           document.querySelectorAll('.form-section').forEach(el => el.classList.remove('active'));
           document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
           document.getElementById(section).classList.add('active');
-          document.querySelector(\`.tab:nth-child(\${section === 'register' ? 1 : 2})\`).classList.add('active');
+          const tabIndex = section === 'register' ? 0 : 1;
+          document.querySelectorAll('.tab')[tabIndex].classList.add('active');
         }
 
         async function register() {
@@ -615,7 +614,6 @@ app.get('/app', (req, res) => {
       </div>
 
       <script>
-        // Auto-logout after 30 seconds of inactivity
         let inactivityTimer;
         function resetTimer() {
           clearTimeout(inactivityTimer);
@@ -624,7 +622,7 @@ app.get('/app', (req, res) => {
             localStorage.removeItem('ks1_whatsapp');
             alert('Session expired for security. Please log in again.');
             window.location.href = '/';
-          }, 30000); // 30 seconds
+          }, 30000);
         }
         ['click','touchstart','keypress','scroll'].forEach(e => {
           document.addEventListener(e, resetTimer, true);
