@@ -1,4 +1,4 @@
-// KS1 EMPOWER PAY – ALKEBULAN (AFRICA) EDITION • FINAL BRAND
+// KS1 EMPOWER PAY – ALKEBULAN (AFRICA) EDITION • MERCHANT REGISTRATION
 // Non-custodial • Alkebulan (AFRICA)-first • Nonprofit-powered
 
 const express = require('express');
@@ -12,9 +12,7 @@ const app = express();
 app.use(express.json());
 
 // === CONFIGURATION ===
-const BUSINESS_PASSWORD = process.env.BUSINESS_PASSWORD || "ks1empower";
 const DB_URL = process.env.DATABASE_URL;
-
 if (!DB_URL) {
   console.error("❌ FATAL: DATABASE_URL not set in Render Environment");
   process.exit(1);
@@ -27,6 +25,7 @@ const pool = new Pool({
 
 async function initDB() {
   try {
+    // Create commissions table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS commissions (
         id TEXT PRIMARY KEY,
@@ -41,11 +40,78 @@ async function initDB() {
         created_at TIMESTAMPTZ DEFAULT NOW()
       )
     `);
+    // Create merchants table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS merchants (
+        id TEXT PRIMARY KEY,
+        whatsapp TEXT UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
     console.log("✅ Database ready");
   } catch (err) {
     console.error("❌ Database error:", err.message);
   }
 }
+
+// === MOCK REGISTRATION & LOGIN ===
+app.post('/api/register', async (req, res) => {
+  const { whatsapp, password } = req.body;
+  if (!whatsapp || !password || !whatsapp.startsWith('+233') || password.length < 4) {
+    return res.status(400).json({ error: 'Invalid input' });
+  }
+
+  // In real version: send 4-digit code via WhatsApp
+  const mockCode = Math.floor(1000 + Math.random() * 9000).toString();
+  console.log(`📱 Mock WhatsApp code for ${whatsapp}: ${mockCode}`);
+
+  res.json({ success: true, message: 'Verification code sent to WhatsApp', mockCode });
+});
+
+app.post('/api/verify', async (req, res) => {
+  const { whatsapp, password, code, mockCode } = req.body;
+  if (code !== mockCode) {
+    return res.status(400).json({ error: 'Invalid verification code' });
+  }
+
+  // Hash password (in real app: use bcrypt)
+  const passwordHash = password;
+
+  try {
+    const id = 'm_' + Date.now();
+    await pool.query(
+      `INSERT INTO merchants (id, whatsapp, password_hash) VALUES ($1, $2, $3) ON CONFLICT (whatsapp) DO NOTHING`,
+      [id, whatsapp, passwordHash]
+    );
+    res.json({ success: true, message: 'Account created' });
+  } catch (err) {
+    console.error("Register error:", err.message);
+    res.status(500).json({ error: 'Registration failed' });
+  }
+});
+
+app.post('/api/login', async (req, res) => {
+  const { whatsapp, password } = req.body;
+  if (!whatsapp || !password) {
+    return res.status(400).json({ error: 'Invalid input' });
+  }
+
+  try {
+    const result = await pool.query('SELECT * FROM merchants WHERE whatsapp = $1', [whatsapp]);
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: 'Account not found. Please register first.' });
+    }
+
+    if (result.rows[0].password_hash !== password) {
+      return res.status(401).json({ error: 'Invalid password' });
+    }
+
+    res.json({ success: true, message: 'Login successful' });
+  } catch (err) {
+    res.status(500).json({ error: 'Login failed' });
+  }
+});
 
 // === MOCK MOMO API ===
 app.post('/api/momo/request', async (req, res) => {
@@ -94,7 +160,7 @@ app.get('/api/commissions', async (req, res) => {
   }
 });
 
-// === LOGIN PAGE ===
+// === LANDING PAGE WITH REGISTRATION & LOGIN ===
 app.get('/', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -111,22 +177,25 @@ app.get('/', (req, res) => {
           color: #fff;
           line-height: 1.6;
           padding: 1.5rem;
-          max-width: 500px;
+          max-width: 600px;
           margin: 0 auto;
           min-height: 100vh;
           display: flex;
           flex-direction: column;
-          justify-content: center;
         }
-        .login-card {
-          background: #0a0a0f;
-          border-radius: 20px;
-          padding: 2rem;
-          box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-          border: 1px solid #222;
+        .container {
+          background: rgba(10, 10, 15, 0.95);
+          border-radius: 24px;
+          padding: 2.2rem;
+          margin-top: 1.5rem;
+          margin-bottom: 2rem;
+          box-shadow: 
+            0 0 25px rgba(255, 215, 0, 0.25),
+            inset 0 0 15px rgba(255, 215, 0, 0.08);
+          border: 1px solid rgba(255, 215, 0, 0.15);
         }
         h1 {
-          font-size: 2.3rem;
+          font-size: 2.4rem;
           font-weight: 900;
           color: #1e3a8a;
           text-align: center;
@@ -135,20 +204,32 @@ app.get('/', (req, res) => {
             0 4px 0 #1d4ed8,
             0 6px 12px rgba(0,0,0,0.5);
         }
+        .subtitle {
+          color: #FFD700;
+          font-size: 1.15rem;
+          font-weight: 700;
+          text-align: center;
+          margin-bottom: 2.2rem;
+          letter-spacing: 0.5px;
+        }
+        .form-group {
+          margin-bottom: 1.4rem;
+          position: relative;
+        }
         input {
           width: 100%;
-          padding: 0.95rem;
-          margin: 0.8rem 0;
+          padding: 0.95rem 1.1rem;
           border: none;
-          border-radius: 12px;
+          border-radius: 14px;
           background: #111;
           color: white;
           border: 1px solid #333;
-          outline: none;
+          font-size: 1.05rem;
         }
         input:focus {
           border-color: #FFD700;
           box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.3);
+          outline: none;
         }
         .password-toggle {
           position: absolute;
@@ -159,70 +240,232 @@ app.get('/', (req, res) => {
           border: none;
           color: #aaa;
           cursor: pointer;
-          font-size: 1.2rem;
+          font-size: 1.3rem;
         }
-        .btn-login {
+        .btn {
           background: linear-gradient(135deg, #FFD700, #D4AF37);
           color: #000;
           font-weight: 800;
           text-transform: uppercase;
           letter-spacing: 0.5px;
-          font-size: 1.1rem;
-          padding: 0.95rem;
+          font-size: 1.12rem;
+          padding: 1rem;
           border: none;
-          border-radius: 12px;
+          border-radius: 14px;
           width: 100%;
           cursor: pointer;
           box-shadow: 
-            0 5px 0 #B8860B,
-            0 7px 14px rgba(0,0,0,0.4);
+            0 6px 0 #B8860B,
+            0 8px 16px rgba(0,0,0,0.4);
           transition: all 0.15s ease;
         }
-        .btn-login:hover {
+        .btn:hover {
           background: linear-gradient(135deg, #FFE04D, #E6C24A);
           transform: translateY(2px);
           box-shadow: 
-            0 3px 0 #B8860B,
-            0 5px 12px rgba(0,0,0,0.4);
+            0 4px 0 #B8860B,
+            0 6px 14px rgba(0,0,0,0.4);
         }
-        .btn-login:active {
-          transform: translateY(5px);
+        .btn:active {
+          transform: translateY(6px);
           box-shadow: 
             0 0 0 #B8860B,
-            0 3px 8px rgba(0,0,0,0.3);
+            0 4px 10px rgba(0,0,0,0.3);
+        }
+        .tabs {
+          display: flex;
+          gap: 1rem;
+          margin-bottom: 1.8rem;
+        }
+        .tab {
+          flex: 1;
+          text-align: center;
+          padding: 0.8rem;
+          border-radius: 12px;
+          cursor: pointer;
+          font-weight: 600;
+          background: #1a1a1f;
+        }
+        .tab.active {
+          background: rgba(255, 215, 0, 0.15);
+          color: #FFD700;
+        }
+        .form-section {
+          display: none;
+        }
+        .form-section.active {
+          display: block;
         }
         .error {
           color: #ef4444;
           text-align: center;
           margin-top: 1rem;
-          font-size: 0.9rem;
+          font-size: 0.95rem;
+        }
+        .footer {
+          text-align: center;
+          color: #777;
+          font-size: 0.85rem;
+          padding-top: 1.5rem;
+          border-top: 1px solid #222;
+          margin-top: auto;
+        }
+        .trademark {
+          color: #aaa;
+          font-size: 0.8rem;
+          margin-top: 0.5rem;
         }
       </style>
     </head>
     <body>
-      <div class="login-card">
+      <div class="container">
         <h1>KS1 Empower Pay</h1>
-        <div style="position: relative;">
-          <input type="password" id="password" placeholder="Enter Business Password" />
-          <button class="password-toggle" onclick="togglePassword()">👁️</button>
+        <p class="subtitle">Secure Access for Merchants</p>
+
+        <div class="tabs">
+          <div class="tab active" onclick="showSection('register')">Register</div>
+          <div class="tab" onclick="showSection('login')">Login</div>
         </div>
-        <button class="btn-login" onclick="login()">Access Account</button>
-        <div id="error" class="error"></div>
+
+        <!-- REGISTER FORM -->
+        <div id="register" class="form-section active">
+          <div class="form-group">
+            <input type="text" id="reg-whatsapp" placeholder="Your WhatsApp Number (+233...)" />
+          </div>
+          <div class="form-group">
+            <input type="password" id="reg-password" placeholder="Create Password (min 4 chars)" />
+            <button class="password-toggle" onclick="togglePassword('reg-password')">👁️</button>
+          </div>
+          <div class="form-group">
+            <input type="text" id="reg-code" placeholder="4-Digit Code from WhatsApp" />
+          </div>
+          <button class="btn" onclick="register()">Create Account</button>
+          <div id="reg-error" class="error"></div>
+        </div>
+
+        <!-- LOGIN FORM -->
+        <div id="login" class="form-section">
+          <div class="form-group">
+            <input type="text" id="login-whatsapp" placeholder="Your WhatsApp Number (+233...)" />
+          </div>
+          <div class="form-group">
+            <input type="password" id="login-password" placeholder="Your Password" />
+            <button class="password-toggle" onclick="togglePassword('login-password')">👁️</button>
+          </div>
+          <button class="btn" onclick="login()">Access Dashboard</button>
+          <div id="login-error" class="error"></div>
+        </div>
+      </div>
+
+      <div class="footer">
+        © 2026 ShineGPT - A nonprofit project by KS1 Empire Group & Foundation (KS1EGF)<br/>
+        <span class="trademark">Built with love for every curious mind</span>
       </div>
 
       <script>
-        function togglePassword() {
-          const pwd = document.getElementById('password');
-          pwd.type = pwd.type === 'password' ? 'text' : 'password';
+        let currentMockCode = '';
+
+        function togglePassword(id) {
+          const input = document.getElementById(id);
+          const btn = input.nextElementSibling;
+          if (input.type === 'password') {
+            input.type = 'text';
+            btn.textContent = '🔒';
+          } else {
+            input.type = 'password';
+            btn.textContent = '👁️';
+          }
         }
 
-        function login() {
-          const pwd = document.getElementById('password').value;
-          if (pwd === '${BUSINESS_PASSWORD}') {
+        function showSection(section) {
+          document.querySelectorAll('.form-section').forEach(el => el.classList.remove('active'));
+          document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+          document.getElementById(section).classList.add('active');
+          document.querySelector(\`.tab:nth-child(\${section === 'register' ? 1 : 2})\`).classList.add('active');
+        }
+
+        async function register() {
+          const whatsapp = document.getElementById('reg-whatsapp').value.trim();
+          const password = document.getElementById('reg-password').value;
+          const code = document.getElementById('reg-code').value;
+
+          if (!whatsapp || !password || !code) {
+            document.getElementById('reg-error').textContent = 'Please fill all fields';
+            return;
+          }
+          if (!whatsapp.startsWith('+233')) {
+            document.getElementById('reg-error').textContent = 'Enter a valid Ghanaian WhatsApp number (+233...)';
+            return;
+          }
+          if (password.length < 4) {
+            document.getElementById('reg-error').textContent = 'Password must be at least 4 characters';
+            return;
+          }
+
+          // Step 1: Request code (in real app: sends via WhatsApp)
+          if (!currentMockCode) {
+            const res = await fetch('/api/register', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ whatsapp, password })
+            });
+            const data = await res.json();
+            if (data.success) {
+              currentMockCode = data.mockCode;
+              alert('🔐 Mock verification code: ' + currentMockCode + '\\n(In real version, this would be sent to your WhatsApp)');
+              document.getElementById('reg-error').textContent = 'Code sent! Enter it above.';
+            } else {
+              document.getElementById('reg-error').textContent = data.error || 'Failed to send code';
+            }
+            return;
+          }
+
+          // Step 2: Verify code
+          if (code !== currentMockCode) {
+            document.getElementById('reg-error').textContent = 'Invalid verification code';
+            return;
+          }
+
+          const verifyRes = await fetch('/api/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ whatsapp, password, code, mockCode: currentMockCode })
+          });
+          const verifyData = await verifyRes.json();
+          if (verifyData.success) {
             localStorage.setItem('ks1_auth', 'true');
+            localStorage.setItem('ks1_whatsapp', whatsapp);
             window.location.href = '/app';
           } else {
-            document.getElementById('error').textContent = 'Invalid password. Contact KS1EGF.';
+            document.getElementById('reg-error').textContent = verifyData.error || 'Registration failed';
+          }
+        }
+
+        async function login() {
+          const whatsapp = document.getElementById('login-whatsapp').value.trim();
+          const password = document.getElementById('login-password').value;
+
+          if (!whatsapp || !password) {
+            document.getElementById('login-error').textContent = 'Please enter WhatsApp and password';
+            return;
+          }
+          if (!whatsapp.startsWith('+233')) {
+            document.getElementById('login-error').textContent = 'Enter a valid Ghanaian WhatsApp number (+233...)';
+            return;
+          }
+
+          const res = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ whatsapp, password })
+          });
+          const data = await res.json();
+          if (data.success) {
+            localStorage.setItem('ks1_auth', 'true');
+            localStorage.setItem('ks1_whatsapp', whatsapp);
+            window.location.href = '/app';
+          } else {
+            document.getElementById('login-error').textContent = data.error || 'Login failed';
           }
         }
       </script>
@@ -250,6 +493,16 @@ app.get('/app', (req, res) => {
           padding: 1.5rem;
           max-width: 600px;
           margin: 0 auto;
+        }
+        .container {
+          background: rgba(10, 10, 15, 0.95);
+          border-radius: 24px;
+          padding: 2.2rem;
+          margin-bottom: 2rem;
+          box-shadow: 
+            0 0 25px rgba(255, 215, 0, 0.25),
+            inset 0 0 15px rgba(255, 215, 0, 0.08);
+          border: 1px solid rgba(255, 215, 0, 0.15);
         }
         header {
           text-align: center;
@@ -281,7 +534,8 @@ app.get('/app', (req, res) => {
           border-radius: 18px;
           padding: 1.7rem;
           margin-bottom: 1.7rem;
-          box-shadow: 0 0 20px rgba(255, 215, 0, 0.15);
+          box-shadow: 
+            0 0 20px rgba(255, 215, 0, 0.15);
           border: 1px solid rgba(255, 215, 0, 0.1);
         }
         .card h2 {
@@ -360,22 +614,24 @@ app.get('/app', (req, res) => {
       </style>
     </head>
     <body>
-      <header>
-        <h1>KS1 Empower Pay</h1>
-        <p class="subtitle">Non-custodial • Alkebulan (AFRICA)-first • Nonprofit-powered</p>
-      </header>
+      <div class="container">
+        <header>
+          <h1>KS1 Empower Pay</h1>
+          <p class="subtitle">Non-custodial • Alkebulan (AFRICA)-first • Nonprofit-powered</p>
+        </header>
 
-      <div class="card">
-        <h2>Create Payment</h2>
-        <input type="number" id="amount" placeholder="Amount in GHS" min="1" value="100"/>
-        <input type="text" id="phone" placeholder="Customer MoMo number (e.g. +233...)" value="+233240000000"/>
-        <button class="btn-momo" onclick="requestMomo()"><span class="blue-heart">💙</span> Pay & Empower Alkebulan (AFRICA)</button>
-        <div id="result"></div>
+        <div class="card">
+          <h2>Create Payment</h2>
+          <input type="number" id="amount" placeholder="Amount in GHS" min="1" value="100"/>
+          <input type="text" id="phone" placeholder="Customer MoMo number (e.g. +233...)" value="+233240000000"/>
+          <button class="btn-momo" onclick="requestMomo()"><span class="blue-heart">💙</span> Pay & Empower Alkebulan (AFRICA)</button>
+          <div id="result"></div>
+        </div>
       </div>
 
       <div class="footer">
-        © 2026 KS1 Empire Group & Foundation (KS1EGF)<br/>
-        A 0.3% solidarity contribution funds Alkebulan (AFRICA) digital freedom.
+        © 2026 ShineGPT - A nonprofit project by KS1 Empire Group & Foundation (KS1EGF)<br/>
+        Built with love for every curious mind
       </div>
 
       <script>
@@ -385,6 +641,7 @@ app.get('/app', (req, res) => {
           clearTimeout(inactivityTimer);
           inactivityTimer = setTimeout(() => {
             localStorage.removeItem('ks1_auth');
+            localStorage.removeItem('ks1_whatsapp');
             alert('Session expired for security. Please log in again.');
             window.location.href = '/';
           }, 30000); // 30 seconds
