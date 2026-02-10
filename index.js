@@ -1,4 +1,4 @@
-// KS1 EMPOWER PAY – ALKEBULAN (AFRICA) EDITION • LOGIN MODE
+// KS1 EMPOWER PAY – ALKEBULAN (AFRICA) EDITION • BUSINESS PASSWORD MODE
 // Non-custodial • Alkebulan (AFRICA)-first • Nonprofit-powered
 
 const express = require('express');
@@ -10,6 +10,9 @@ dns.setDefaultResultOrder('ipv4first');
 
 const app = express();
 app.use(express.json());
+
+// === CONFIGURATION ===
+const BUSINESS_PASSWORD = process.env.BUSINESS_PASSWORD || "ks1empower2026"; // Default fallback
 
 // === DATABASE SETUP ===
 const DB_URL = process.env.DATABASE_URL;
@@ -25,7 +28,6 @@ const pool = new Pool({
 
 async function initDB() {
   try {
-    // Create commissions table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS commissions (
         id TEXT PRIMARY KEY,
@@ -40,44 +42,11 @@ async function initDB() {
         created_at TIMESTAMPTZ DEFAULT NOW()
       )
     `);
-    // Create merchants table
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS merchants (
-        id TEXT PRIMARY KEY,
-        whatsapp TEXT UNIQUE NOT NULL,
-        password_hash TEXT NOT NULL,
-        created_at TIMESTAMPTZ DEFAULT NOW()
-      )
-    `);
     console.log("✅ Database ready");
   } catch (err) {
     console.error("❌ Database error:", err.message);
   }
 }
-
-// === LOGIN API ===
-app.post('/api/login', async (req, res) => {
-  const { whatsapp, password } = req.body;
-  if (!whatsapp || !password) {
-    return res.status(400).json({ error: 'Invalid input' });
-  }
-
-  try {
-    const result = await pool.query('SELECT * FROM merchants WHERE whatsapp = $1', [whatsapp]);
-    if (result.rows.length === 0) {
-      return res.status(401).json({ error: 'Account not found. Contact KS1EGF to register.' });
-    }
-
-    if (result.rows[0].password_hash !== password) {
-      return res.status(401).json({ error: 'Invalid password' });
-    }
-
-    res.json({ success: true, message: 'Login successful' });
-  } catch (err) {
-    console.error("Login error:", err.message);
-    res.status(500).json({ error: 'Login failed' });
-  }
-});
 
 // === MOCK MOMO API ===
 app.post('/api/momo/request', async (req, res) => {
@@ -126,15 +95,15 @@ app.get('/api/commissions', async (req, res) => {
   }
 });
 
-// === LOGIN PAGE (CENTERED & PROFESSIONAL) ===
-app.get('/login', (req, res) => {
+// === LANDING PAGE: BUSINESS PASSWORD ===
+app.get('/', (req, res) => {
   res.send(`
     <!DOCTYPE html>
     <html lang="en">
     <head>
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-      <title>KS1 Empower Pay • Login</title>
+      <title>KS1 Empower Pay</title>
       <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -260,13 +229,10 @@ app.get('/login', (req, res) => {
     <body>
       <div class="login-card">
         <h1>KS1 Empower Pay</h1>
-        <p class="subtitle">Secure Access for Merchants</p>
+        <p class="subtitle">Secure Access for Authorized Merchants</p>
 
         <div class="form-group">
-          <input type="text" id="whatsapp" placeholder="Your WhatsApp Number (+233...)" />
-        </div>
-        <div class="form-group">
-          <input type="password" id="password" placeholder="Your Password" />
+          <input type="password" id="password" placeholder="Enter Business Password" />
           <button class="password-toggle" onclick="togglePassword()">👁️</button>
         </div>
         <button class="btn-login" onclick="login()">Access Dashboard</button>
@@ -292,35 +258,20 @@ app.get('/login', (req, res) => {
         }
 
         async function login() {
-          const whatsapp = document.getElementById('whatsapp').value.trim();
           const password = document.getElementById('password').value;
           const errorEl = document.getElementById('error');
 
-          if (!whatsapp || !password) {
-            errorEl.textContent = 'Please enter WhatsApp and password';
-            return;
-          }
-          if (!whatsapp.startsWith('+233')) {
-            errorEl.textContent = 'Enter a valid Ghanaian number (+233...)';
+          if (!password) {
+            errorEl.textContent = 'Please enter the business password';
             return;
           }
 
-          try {
-            const res = await fetch('/api/login', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ whatsapp, password })
-            });
-            const data = await res.json();
-            if (data.success) {
-              localStorage.setItem('ks1_auth', 'true');
-              localStorage.setItem('ks1_whatsapp', whatsapp);
-              window.location.href = '/app';
-            } else {
-              errorEl.textContent = data.error || 'Login failed';
-            }
-          } catch (err) {
-            errorEl.textContent = 'Network error. Please try again.';
+          // In real app: send to /api/login, but we'll validate client-side for simplicity
+          if (password === '${BUSINESS_PASSWORD}') {
+            localStorage.setItem('ks1_auth', 'true');
+            window.location.href = '/app';
+          } else {
+            errorEl.textContent = 'Invalid business password';
           }
         }
       </script>
@@ -502,9 +453,8 @@ app.get('/app', (req, res) => {
           clearTimeout(inactivityTimer);
           inactivityTimer = setTimeout(() => {
             localStorage.removeItem('ks1_auth');
-            localStorage.removeItem('ks1_whatsapp');
             alert('Session expired for security.');
-            window.location.href = '/login';
+            window.location.href = '/';
           }, 30000);
         }
         ['click','touchstart','keypress','scroll'].forEach(e => {
@@ -558,15 +508,11 @@ app.get('/app', (req, res) => {
   `);
 });
 
-// === ROOT REDIRECT TO LOGIN ===
-app.get('/', (req, res) => {
-  res.redirect('/login');
-});
-
 // === START SERVER ===
 const PORT = parseInt(process.env.PORT, 10) || 10000;
 initDB().then(() => {
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 KS1 Empower Pay running on port ${PORT}`);
+    console.log(`🔑 Business password: ${BUSINESS_PASSWORD}`);
   });
 });
