@@ -1,4 +1,4 @@
-// KS1 EMPOWER PAY – ALKEBULAN (AFRICA) EDITION • NO LOGIN MODE
+// KS1 EMPOWER PAY – ALKEBULAN (AFRICA) EDITION • LOGIN MODE
 // Non-custodial • Alkebulan (AFRICA)-first • Nonprofit-powered
 
 const express = require('express');
@@ -25,6 +25,7 @@ const pool = new Pool({
 
 async function initDB() {
   try {
+    // Create commissions table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS commissions (
         id TEXT PRIMARY KEY,
@@ -39,11 +40,44 @@ async function initDB() {
         created_at TIMESTAMPTZ DEFAULT NOW()
       )
     `);
+    // Create merchants table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS merchants (
+        id TEXT PRIMARY KEY,
+        whatsapp TEXT UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
     console.log("✅ Database ready");
   } catch (err) {
     console.error("❌ Database error:", err.message);
   }
 }
+
+// === LOGIN API ===
+app.post('/api/login', async (req, res) => {
+  const { whatsapp, password } = req.body;
+  if (!whatsapp || !password) {
+    return res.status(400).json({ error: 'Invalid input' });
+  }
+
+  try {
+    const result = await pool.query('SELECT * FROM merchants WHERE whatsapp = $1', [whatsapp]);
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: 'Account not found. Contact KS1EGF to register.' });
+    }
+
+    if (result.rows[0].password_hash !== password) {
+      return res.status(401).json({ error: 'Invalid password' });
+    }
+
+    res.json({ success: true, message: 'Login successful' });
+  } catch (err) {
+    console.error("Login error:", err.message);
+    res.status(500).json({ error: 'Login failed' });
+  }
+});
 
 // === MOCK MOMO API ===
 app.post('/api/momo/request', async (req, res) => {
@@ -92,8 +126,211 @@ app.get('/api/commissions', async (req, res) => {
   }
 });
 
-// === MAIN DASHBOARD (NO LOGIN) ===
-app.get('/', (req, res) => {
+// === LOGIN PAGE (CENTERED & PROFESSIONAL) ===
+app.get('/login', (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+      <title>KS1 Empower Pay • Login</title>
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+          font-family: system-ui;
+          background: #000;
+          color: #fff;
+          line-height: 1.6;
+          padding: 1rem;
+          max-width: 500px;
+          margin: 0 auto;
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+        }
+        .login-card {
+          background: rgba(10, 10, 15, 0.95);
+          border-radius: 20px;
+          padding: 2rem;
+          box-shadow: 
+            0 0 20px rgba(255, 215, 0, 0.2),
+            inset 0 0 10px rgba(255, 215, 0, 0.05);
+          border: 1px solid rgba(255, 215, 0, 0.1);
+        }
+        h1 {
+          font-size: 2.1rem;
+          font-weight: 900;
+          color: #1e3a8a;
+          text-align: center;
+          margin-bottom: 1.6rem;
+          text-shadow: 
+            0 3px 0 #1d4ed8,
+            0 5px 10px rgba(0,0,0,0.4);
+        }
+        .subtitle {
+          color: #FFD700;
+          font-size: 1.05rem;
+          text-align: center;
+          margin-bottom: 1.8rem;
+          letter-spacing: 0.5px;
+        }
+        .form-group {
+          margin-bottom: 1.2rem;
+          position: relative;
+        }
+        input {
+          width: 100%;
+          padding: 0.85rem 1rem;
+          border: none;
+          border-radius: 12px;
+          background: #111;
+          color: white;
+          border: 1px solid #333;
+          font-size: 1rem;
+        }
+        input:focus {
+          border-color: #FFD700;
+          box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.25);
+          outline: none;
+        }
+        .password-toggle {
+          position: absolute;
+          right: 1.1rem;
+          top: 50%;
+          transform: translateY(-50%);
+          background: none;
+          border: none;
+          color: #aaa;
+          cursor: pointer;
+          font-size: 1.2rem;
+        }
+        .btn-login {
+          background: linear-gradient(135deg, #FFD700, #D4AF37);
+          color: #000;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          font-size: 1.05rem;
+          padding: 0.9rem;
+          border: none;
+          border-radius: 12px;
+          width: 100%;
+          cursor: pointer;
+          box-shadow: 
+            0 5px 0 #B8860B,
+            0 7px 12px rgba(0,0,0,0.4);
+          transition: all 0.15s ease;
+        }
+        .btn-login:hover {
+          background: linear-gradient(135deg, #FFE04D, #E6C24A);
+          transform: translateY(2px);
+          box-shadow: 
+            0 3px 0 #B8860B,
+            0 5px 10px rgba(0,0,0,0.4);
+        }
+        .btn-login:active {
+          transform: translateY(5px);
+          box-shadow: 
+            0 0 0 #B8860B,
+            0 3px 8px rgba(0,0,0,0.3);
+        }
+        .error {
+          color: #ef4444;
+          text-align: center;
+          margin-top: 1rem;
+          font-size: 0.9rem;
+        }
+        .footer {
+          text-align: center;
+          color: #777;
+          font-size: 0.8rem;
+          padding-top: 1.5rem;
+          margin-top: auto;
+        }
+        .trademark {
+          color: #aaa;
+          font-size: 0.75rem;
+          margin-top: 0.4rem;
+          font-style: italic;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="login-card">
+        <h1>KS1 Empower Pay</h1>
+        <p class="subtitle">Secure Access for Merchants</p>
+
+        <div class="form-group">
+          <input type="text" id="whatsapp" placeholder="Your WhatsApp Number (+233...)" />
+        </div>
+        <div class="form-group">
+          <input type="password" id="password" placeholder="Your Password" />
+          <button class="password-toggle" onclick="togglePassword()">👁️</button>
+        </div>
+        <button class="btn-login" onclick="login()">Access Dashboard</button>
+        <div id="error" class="error"></div>
+      </div>
+
+      <div class="footer">
+        © 2026 ShineGPT – KS1 Empire Group & Foundation (KS1EGF)<br/>
+        <span class="trademark">Built for Alkebulan (Africa) SMEs, Businesses And Entrepreneurs — united in digital sovereignty and shared prosperity.</span>
+      </div>
+
+      <script>
+        function togglePassword() {
+          const pwd = document.getElementById('password');
+          const btn = pwd.nextElementSibling;
+          if (pwd.type === 'password') {
+            pwd.type = 'text';
+            btn.textContent = '🔒';
+          } else {
+            pwd.type = 'password';
+            btn.textContent = '👁️';
+          }
+        }
+
+        async function login() {
+          const whatsapp = document.getElementById('whatsapp').value.trim();
+          const password = document.getElementById('password').value;
+          const errorEl = document.getElementById('error');
+
+          if (!whatsapp || !password) {
+            errorEl.textContent = 'Please enter WhatsApp and password';
+            return;
+          }
+          if (!whatsapp.startsWith('+233')) {
+            errorEl.textContent = 'Enter a valid Ghanaian number (+233...)';
+            return;
+          }
+
+          try {
+            const res = await fetch('/api/login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ whatsapp, password })
+            });
+            const data = await res.json();
+            if (data.success) {
+              localStorage.setItem('ks1_auth', 'true');
+              localStorage.setItem('ks1_whatsapp', whatsapp);
+              window.location.href = '/app';
+            } else {
+              errorEl.textContent = data.error || 'Login failed';
+            }
+          } catch (err) {
+            errorEl.textContent = 'Network error. Please try again.';
+          }
+        }
+      </script>
+    </body>
+    </html>
+  `);
+});
+
+// === MAIN APP (PROTECTED) ===
+app.get('/app', (req, res) => {
   res.send(`
     <!DOCTYPE html>
     <html lang="en">
@@ -259,13 +496,15 @@ app.get('/', (req, res) => {
       </div>
 
       <script>
-        // Auto-logout after 30 seconds of inactivity (optional)
+        // Auto-logout after 30 seconds
         let inactivityTimer;
         function resetTimer() {
           clearTimeout(inactivityTimer);
           inactivityTimer = setTimeout(() => {
-            alert('Session ended for security.');
-            window.location.reload();
+            localStorage.removeItem('ks1_auth');
+            localStorage.removeItem('ks1_whatsapp');
+            alert('Session expired for security.');
+            window.location.href = '/login';
           }, 30000);
         }
         ['click','touchstart','keypress','scroll'].forEach(e => {
@@ -317,6 +556,11 @@ app.get('/', (req, res) => {
     </body>
     </html>
   `);
+});
+
+// === ROOT REDIRECT TO LOGIN ===
+app.get('/', (req, res) => {
+  res.redirect('/login');
 });
 
 // === START SERVER ===
