@@ -55,30 +55,30 @@ async function initDB() {
   }
 }
 
-// === REGISTER MERCHANT ===
+// === REGISTER MERCHANT (FIXED) ===
 app.post('/api/register', async (req, res) => {
   const { whatsapp, password } = req.body;
   if (!whatsapp || !password || !whatsapp.startsWith('+233') || password.length < 4) {
     return res.status(400).json({ error: 'Invalid input' });
   }
 
-  // ⚠️ In production: use bcrypt to hash password
-  const passwordHash = password;
+  const passwordHash = password; // ⚠️ In production: use bcrypt
+  const id = 'm_' + Date.now();
 
   try {
-    const id = 'm_' + Date.now();
-    await pool.query(
-      `INSERT INTO merchants (id, whatsapp, password_hash) VALUES ($1, $2, $3)`,
+    const result = await pool.query(
+      `INSERT INTO merchants (id, whatsapp, password_hash) VALUES ($1, $2, $3) ON CONFLICT (whatsapp) DO NOTHING RETURNING id`,
       [id, whatsapp, passwordHash]
     );
+
+    if (result.rows.length === 0) {
+      return res.status(409).json({ error: 'This WhatsApp number is already registered' });
+    }
+
     res.json({ success: true, message: 'Account created' });
   } catch (err) {
-    if (err.message.includes('duplicate key')) {
-      res.status(409).json({ error: 'WhatsApp number already registered' });
-    } else {
-      console.error("Register error:", err.message);
-      res.status(500).json({ error: 'Registration failed' });
-    }
+    console.error("Register error:", err.message);
+    res.status(500).json({ error: 'Registration failed' });
   }
 });
 
