@@ -118,7 +118,6 @@ app.get('/', (req, res) => {
           display: flex;
           flex-direction: column;
           justify-content: center;
-          /* ✅ Push content slightly down for true center feel */
           padding-top: 2vh;
           padding-bottom: 2vh;
         }
@@ -285,7 +284,7 @@ app.get('/', (req, res) => {
   `);
 });
 
-// === MAIN APP: COMPACT & CENTERED ===
+// === MAIN APP: WITH COPY RECEIPT FEATURE ===
 app.get('/app', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -418,6 +417,20 @@ app.get('/app', (req, res) => {
           font-size: 0.89rem;
           line-height: 1.5;
         }
+        .copy-btn {
+          background: #3b82f6;
+          color: white;
+          border: none;
+          padding: 0.4rem 0.8rem;
+          border-radius: 6px;
+          font-size: 0.85rem;
+          cursor: pointer;
+          margin-top: 0.5rem;
+          display: inline-block;
+        }
+        .copy-btn:hover {
+          background: #2563eb;
+        }
         .footer {
           text-align: center;
           color: #777;
@@ -470,6 +483,34 @@ app.get('/app', (req, res) => {
         });
         resetTimer();
 
+        function copyReceipt(text) {
+          if (navigator.clipboard) {
+            navigator.clipboard.writeText(text).then(() => {
+              alert('✅ Receipt copied! Paste it into WhatsApp or any app.');
+            }).catch(err => {
+              fallbackCopy(text);
+            });
+          } else {
+            fallbackCopy(text);
+          }
+        }
+
+        function fallbackCopy(text) {
+          const textarea = document.createElement('textarea');
+          textarea.value = text;
+          textarea.style.position = 'fixed';
+          textarea.style.opacity = '0';
+          document.body.appendChild(textarea);
+          textarea.select();
+          try {
+            document.execCommand('copy');
+            alert('✅ Receipt copied! Paste it into WhatsApp.');
+          } catch (err) {
+            alert('❌ Failed to copy. Please select and copy manually.');
+          }
+          document.body.removeChild(textarea);
+        }
+
         async function requestMomo() {
           const amount = parseFloat(document.getElementById('amount').value);
           const phone = document.getElementById('phone').value.trim();
@@ -492,7 +533,16 @@ app.get('/app', (req, res) => {
             });
             const data = await res.json();
             if (data.success) {
-              const receipt = 
+              const receiptText = 
+                \`📄 TRANSACTION RECEIPT\\n\\n\` +
+                \`Gross Amount: GHS \${data.amount}\\n\` +
+                \`Solidarity Contribution (0.3%): GHS \${(data.amount * 0.003).toFixed(2)}\\n\` +
+                \`You Receive: GHS \${(data.amount * 0.997).toFixed(2)}\\n\` +
+                \`Status: Completed\\n\` +
+                \`Timestamp: \${new Date().toLocaleString()}\\n\\n\` +
+                \`You just empowered Alkebulan (AFRICA) digital freedom!\`;
+
+              const receiptHtml = 
                 '<div style="font-family: monospace; font-size: 0.89rem; line-height: 1.5;">' +
                   '<strong>📄 TRANSACTION RECEIPT</strong><br/><br/>' +
                   'Gross Amount: GHS ' + data.amount + '<br/>' +
@@ -502,8 +552,12 @@ app.get('/app', (req, res) => {
                   'Timestamp: ' + new Date().toLocaleString() +
                 '</div>' +
                 '<br/>' +
+                '<button class="copy-btn" onclick="copyReceipt(\\\`' + receiptText.replace(/\\/g, '\\\\').replace(/\\`/g, '\\\\`') + '\\\`)">' +
+                '📋 Copy Receipt to WhatsApp</button>' +
+                '<br/><br/>' +
                 'You just empowered Alkebulan (AFRICA) digital freedom!';
-              r.innerHTML = '<strong>🎉 Payment Completed!</strong><br/>' + receipt;
+
+              r.innerHTML = '<strong>🎉 Payment Completed!</strong><br/>' + receiptHtml;
             }
           } catch (e) {
             r.innerHTML = '❌ Network error';
