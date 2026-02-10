@@ -3,6 +3,11 @@
 
 const express = require('express');
 const { Pool } = require('pg');
+const dns = require('dns');
+
+// 🔑 FORCE IPv4 FOR RENDER + SUPABASE COMPATIBILITY
+dns.setDefaultResultOrder('ipv4first');
+
 const app = express();
 app.use(express.json());
 
@@ -198,28 +203,11 @@ app.get('/', (req, res) => {
           const pwd = document.getElementById('password').value;
           if (pwd === '${BUSINESS_PASSWORD}') {
             localStorage.setItem('ks1_auth', 'true');
-            localStorage.setItem('ks1_last_active', Date.now());
             window.location.href = '/app';
           } else {
             document.getElementById('error').textContent = 'Invalid password. Contact KS1EGF.';
           }
         }
-
-        // Auto-logout after 35 minutes of inactivity
-        let inactivityTimer;
-        function resetTimer() {
-          clearTimeout(inactivityTimer);
-          inactivityTimer = setTimeout(() => {
-            localStorage.removeItem('ks1_auth');
-            localStorage.removeItem('ks1_last_active');
-            window.location.reload();
-          }, 2100000); // 35 mins = 2,100,000 ms
-        }
-
-        // Track user activity
-        ['click', 'touchstart', 'keypress', 'scroll'].forEach(event => {
-          document.addEventListener(event, resetTimer, true);
-        });
       </script>
     </body>
     </html>
@@ -384,7 +372,7 @@ app.get('/app', (req, res) => {
             localStorage.removeItem('ks1_auth');
             alert('Session expired for security. Please log in again.');
             window.location.href = '/';
-          }, 2100000);
+          }, 2100000); // 35 mins = 2,100,000 ms
         }
         ['click','touchstart','keypress','scroll'].forEach(e => {
           document.addEventListener(e, resetTimer, true);
