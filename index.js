@@ -376,60 +376,70 @@ app.get('/', (req, res) => {
         async function register() {
           const whatsapp = document.getElementById('reg-whatsapp').value.trim();
           const password = document.getElementById('reg-password').value;
+          const errorEl = document.getElementById('reg-error');
 
           if (!whatsapp || !password) {
-            document.getElementById('reg-error').textContent = 'Please fill all fields';
+            errorEl.textContent = 'Please fill all fields';
             return;
           }
           if (!whatsapp.startsWith('+233')) {
-            document.getElementById('reg-error').textContent = 'Enter a valid Ghanaian WhatsApp number (+233...)';
+            errorEl.textContent = 'Enter a valid Ghanaian WhatsApp number (+233...)';
             return;
           }
           if (password.length < 4) {
-            document.getElementById('reg-error').textContent = 'Password must be at least 4 characters';
+            errorEl.textContent = 'Password must be at least 4 characters';
             return;
           }
 
-          const res = await fetch('/api/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ whatsapp, password })
-          });
-          const data = await res.json();
-          if (data.success) {
-            localStorage.setItem('ks1_auth', 'true');
-            localStorage.setItem('ks1_whatsapp', whatsapp);
-            window.location.href = '/app';
-          } else {
-            document.getElementById('reg-error').textContent = data.error || 'Registration failed';
+          try {
+            const res = await fetch('/api/register', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ whatsapp, password })
+            });
+            const data = await res.json();
+            if (data.success) {
+              localStorage.setItem('ks1_auth', 'true');
+              localStorage.setItem('ks1_whatsapp', whatsapp);
+              window.location.href = '/app';
+            } else {
+              errorEl.textContent = data.error || 'Registration failed';
+            }
+          } catch (err) {
+            errorEl.textContent = 'Network error. Please try again.';
           }
         }
 
         async function login() {
           const whatsapp = document.getElementById('login-whatsapp').value.trim();
           const password = document.getElementById('login-password').value;
+          const errorEl = document.getElementById('login-error');
 
           if (!whatsapp || !password) {
-            document.getElementById('login-error').textContent = 'Please enter WhatsApp and password';
+            errorEl.textContent = 'Please enter WhatsApp and password';
             return;
           }
           if (!whatsapp.startsWith('+233')) {
-            document.getElementById('login-error').textContent = 'Enter a valid Ghanaian WhatsApp number (+233...)';
+            errorEl.textContent = 'Enter a valid Ghanaian WhatsApp number (+233...)';
             return;
           }
 
-          const res = await fetch('/api/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ whatsapp, password })
-          });
-          const data = await res.json();
-          if (data.success) {
-            localStorage.setItem('ks1_auth', 'true');
-            localStorage.setItem('ks1_whatsapp', whatsapp);
-            window.location.href = '/app';
-          } else {
-            document.getElementById('login-error').textContent = data.error || 'Login failed';
+          try {
+            const res = await fetch('/api/login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ whatsapp, password })
+            });
+            const data = await res.json();
+            if (data.success) {
+              localStorage.setItem('ks1_auth', 'true');
+              localStorage.setItem('ks1_whatsapp', whatsapp);
+              window.location.href = '/app';
+            } else {
+              errorEl.textContent = data.error || 'Login failed';
+            }
+          } catch (err) {
+            errorEl.textContent = 'Network error. Please try again.';
           }
         }
       </script>
