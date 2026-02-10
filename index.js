@@ -358,11 +358,12 @@ app.get('/app', (req, res) => {
         }
         .card input[type="text"]:nth-of-type(1),
         .card input[type="text"]:nth-of-type(2),
-        .card input[type="text"]:nth-of-type(3) {
+        .card input[type="text"]:nth-of-type(3),
+        .card input[type="text"]:nth-of-type(4) {
           font-weight: 600;
           background: #15151a;
         }
-        input, button {
+        input, select, button {
           width: 100%;
           padding: 0.7rem;
           margin: 0.45rem 0;
@@ -370,13 +371,13 @@ app.get('/app', (req, res) => {
           border-radius: 9px;
           font-size: 0.92rem;
         }
-        input {
+        input, select {
           background: #111;
           color: white;
           border: 1px solid #333;
           outline: none;
         }
-        input:focus {
+        input:focus, select:focus {
           border-color: #FFD700;
           box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.2);
         }
@@ -465,8 +466,14 @@ app.get('/app', (req, res) => {
         <div class="card">
           <h2>Create Mobile Money Payment</h2>
           <input type="text" id="business-name" placeholder="Business Name (e.g. Kwame Store)" />
-          <input type="text" id="client-name" placeholder="Client Name (e.g. Ama Serwaa)" />
-          <input type="text" id="business-phone" placeholder="Business Phone (e.g. +233240000000)" />
+          <input type="text" id="customer-name" placeholder="Customer Name (e.g. Ama Serwaa)" />
+          <input type="text" id="customer-number" placeholder="Customer Number (e.g. +233240000000)" />
+          <input type="text" id="business-phone" placeholder="Business Phone (e.g. +233240123456)" />
+          <select id="network">
+            <option value="MTN">MTN</option>
+            <option value="Telecel">Telecel</option>
+            <option value="AirtelTogo">AirtelTogo</option>
+          </select>
           <input type="number" id="amount" placeholder="Amount in GHS" min="1" value="100"/>
           <input type="text" id="customer-phone" placeholder="Customer MoMo number (e.g. +233...)" value="+233240000000"/>
           <button class="btn-momo" onclick="requestMomo()">
@@ -498,8 +505,10 @@ app.get('/app', (req, res) => {
 
         async function requestMomo() {
           const businessName = document.getElementById('business-name').value.trim() || '—';
-          const clientName = document.getElementById('client-name').value.trim() || '—';
+          const customerName = document.getElementById('customer-name').value.trim() || '—';
+          const customerNumber = document.getElementById('customer-number').value.trim() || '—';
           const businessPhone = document.getElementById('business-phone').value.trim() || '—';
+          const network = document.getElementById('network').value;
           const amount = parseFloat(document.getElementById('amount').value);
           const customerPhone = document.getElementById('customer-phone').value.trim();
           const r = document.getElementById('result');
@@ -525,8 +534,10 @@ app.get('/app', (req, res) => {
                 \`KS1 EMPOWER PAY\\n\` +
                 \`────────────────────\\n\` +
                 \`Business Name: \${businessName}\\n\` +
-                \`Client Name: \${clientName}\\n\` +
-                \`Business Phone: \${businessPhone}\\n\\n\` +
+                \`Customer Name: \${customerName}\\n\` +
+                \`Customer Number: \${customerNumber}\\n\` +
+                \`Business Phone: \${businessPhone}\\n\` +
+                \`Network: \${network}\\n\\n\` +
                 \`📄 TRANSACTION RECEIPT\\n\\n\` +
                 \`Gross Amount: GHS \${data.amount}\\n\` +
                 \`Solidarity Contribution (0.3%): GHS \${(data.amount * 0.003).toFixed(2)}\\n\` +
@@ -543,8 +554,10 @@ app.get('/app', (req, res) => {
                   '<strong>KS1 EMPOWER PAY</strong><br/>' +
                   '<hr style="border: 0; border-top: 1px solid #FFD700; margin: 0.4rem 0;" />' +
                   '<strong>Business Name:</strong> ' + businessName + '<br/>' +
-                  '<strong>Client Name:</strong> ' + clientName + '<br/>' +
-                  '<strong>Business Phone:</strong> ' + businessPhone + '<br/><br/>' +
+                  '<strong>Customer Name:</strong> ' + customerName + '<br/>' +
+                  '<strong>Customer Number:</strong> ' + customerNumber + '<br/>' +
+                  '<strong>Business Phone:</strong> ' + businessPhone + '<br/>' +
+                  '<strong>Network:</strong> ' + network + '<br/><br/>' +
                   '<strong>📄 TRANSACTION RECEIPT</strong><br/><br/>' +
                   'Gross Amount: GHS ' + data.amount + '<br/>' +
                   'Solidarity Contribution (0.3%): GHS ' + (data.amount * 0.003).toFixed(2) + '<br/>' +
