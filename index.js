@@ -1,4 +1,4 @@
-// KS1 EMPOWER PAY – ALKEBULAN (AFRICA) EDITION • FINAL BRAND
+// KS1 EMPOWER PAY – ALKEBULAN (AFRICA) EDITION • FINAL PRODUCTION
 // Non-custodial • Alkebulan (AFRICA)-first • Nonprofit-powered
 
 const express = require('express');
@@ -11,7 +11,7 @@ dns.setDefaultResultOrder('ipv4first');
 const app = express();
 app.use(express.json());
 
-// === CONFIGURATION ===
+// === DATABASE SETUP ===
 const DB_URL = process.env.DATABASE_URL;
 if (!DB_URL) {
   console.error("❌ FATAL: DATABASE_URL not set in Render Environment");
@@ -55,29 +55,34 @@ async function initDB() {
   }
 }
 
-// === REGISTRATION (NO WHATSAPP CODE) ===
+// === REGISTER MERCHANT ===
 app.post('/api/register', async (req, res) => {
   const { whatsapp, password } = req.body;
   if (!whatsapp || !password || !whatsapp.startsWith('+233') || password.length < 4) {
     return res.status(400).json({ error: 'Invalid input' });
   }
 
-  const passwordHash = password; // ⚠️ In production: use bcrypt
+  // ⚠️ In production: use bcrypt to hash password
+  const passwordHash = password;
 
   try {
     const id = 'm_' + Date.now();
     await pool.query(
-      `INSERT INTO merchants (id, whatsapp, password_hash) VALUES ($1, $2, $3) ON CONFLICT (whatsapp) DO NOTHING`,
+      `INSERT INTO merchants (id, whatsapp, password_hash) VALUES ($1, $2, $3)`,
       [id, whatsapp, passwordHash]
     );
     res.json({ success: true, message: 'Account created' });
   } catch (err) {
-    console.error("Register error:", err.message);
-    res.status(500).json({ error: 'Registration failed' });
+    if (err.message.includes('duplicate key')) {
+      res.status(409).json({ error: 'WhatsApp number already registered' });
+    } else {
+      console.error("Register error:", err.message);
+      res.status(500).json({ error: 'Registration failed' });
+    }
   }
 });
 
-// === LOGIN ===
+// === LOGIN MERCHANT ===
 app.post('/api/login', async (req, res) => {
   const { whatsapp, password } = req.body;
   if (!whatsapp || !password) {
@@ -96,6 +101,7 @@ app.post('/api/login', async (req, res) => {
 
     res.json({ success: true, message: 'Login successful' });
   } catch (err) {
+    console.error("Login error:", err.message);
     res.status(500).json({ error: 'Login failed' });
   }
 });
@@ -662,7 +668,7 @@ app.get('/app', (req, res) => {
   `);
 });
 
-// === RENDER-COMPLIANT SERVER START ===
+// === START SERVER ===
 const PORT = parseInt(process.env.PORT, 10) || 10000;
 initDB().then(() => {
   app.listen(PORT, '0.0.0.0', () => {
