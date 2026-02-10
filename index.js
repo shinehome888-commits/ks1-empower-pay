@@ -95,7 +95,7 @@ app.get('/api/commissions', async (req, res) => {
   }
 });
 
-// === LANDING PAGE: CENTERED + TRADEMARK FIXED ===
+// === LANDING PAGE ===
 app.get('/', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -284,7 +284,7 @@ app.get('/', (req, res) => {
   `);
 });
 
-// === MAIN APP: WITH COPY RECEIPT FEATURE ===
+// === MAIN APP WITH COPY RECEIPT ===
 app.get('/app', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -533,6 +533,7 @@ app.get('/app', (req, res) => {
             });
             const data = await res.json();
             if (data.success) {
+              // ✅ SAFE STRING GENERATION
               const receiptText = 
                 \`📄 TRANSACTION RECEIPT\\n\\n\` +
                 \`Gross Amount: GHS \${data.amount}\\n\` +
@@ -552,7 +553,7 @@ app.get('/app', (req, res) => {
                   'Timestamp: ' + new Date().toLocaleString() +
                 '</div>' +
                 '<br/>' +
-                '<button class="copy-btn" onclick="copyReceipt(\\\`' + receiptText.replace(/\\/g, '\\\\').replace(/\\`/g, '\\\\`') + '\\\`)">' +
+                '<button class="copy-btn" onclick="copyReceipt(' + JSON.stringify(receiptText) + ')">' +
                 '📋 Copy Receipt to WhatsApp</button>' +
                 '<br/><br/>' +
                 'You just empowered Alkebulan (AFRICA) digital freedom!';
