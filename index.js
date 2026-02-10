@@ -1,11 +1,11 @@
-// KS1 EMPOWER PAY – (AFRICA) ALKEBULAN EDITION WITH BUSINESS LOGIN
-// Non-custodial • (AFRICA) Alkebulan-first • Nonprofit-powered
+// KS1 EMPOWER PAY – ALKEBULAN (AFRICA) EDITION • FINAL BRAND
+// Non-custodial • Alkebulan (AFRICA)-first • Nonprofit-powered
 
 const express = require('express');
 const { Pool } = require('pg');
 const dns = require('dns');
 
-// 🔑 FORCE IPv4 FOR RENDER + SUPABASE COMPATIBILITY
+// 🔑 FORCE IPv4 FOR RENDER + SUPABASE
 dns.setDefaultResultOrder('ipv4first');
 
 const app = express();
@@ -107,7 +107,7 @@ app.get('/', (req, res) => {
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
           font-family: system-ui;
-          background: radial-gradient(circle, rgba(255,215,0,0.15), #000);
+          background: #000;
           color: #fff;
           line-height: 1.6;
           padding: 1.5rem;
@@ -119,13 +119,11 @@ app.get('/', (req, res) => {
           justify-content: center;
         }
         .login-card {
-          background: rgba(10, 10, 15, 0.9);
+          background: #0a0a0f;
           border-radius: 20px;
           padding: 2rem;
-          box-shadow: 
-            0 0 20px rgba(255, 215, 0, 0.3),
-            inset 0 0 10px rgba(255, 215, 0, 0.1);
-          border: 1px solid rgba(255, 215, 0, 0.2);
+          box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+          border: 1px solid #222;
         }
         h1 {
           font-size: 2.3rem;
@@ -143,7 +141,7 @@ app.get('/', (req, res) => {
           margin: 0.8rem 0;
           border: none;
           border-radius: 12px;
-          background: #1a1a1f;
+          background: #111;
           color: white;
           border: 1px solid #333;
           outline: none;
@@ -151,6 +149,17 @@ app.get('/', (req, res) => {
         input:focus {
           border-color: #FFD700;
           box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.3);
+        }
+        .password-toggle {
+          position: absolute;
+          right: 1.2rem;
+          top: 50%;
+          transform: translateY(-50%);
+          background: none;
+          border: none;
+          color: #aaa;
+          cursor: pointer;
+          font-size: 1.2rem;
         }
         .btn-login {
           background: linear-gradient(135deg, #FFD700, #D4AF37);
@@ -193,12 +202,20 @@ app.get('/', (req, res) => {
     <body>
       <div class="login-card">
         <h1>KS1 Empower Pay</h1>
-        <input type="password" id="password" placeholder="Enter Business Password" />
-        <button class="btn-login" onclick="login()">Create / Access Account</button>
+        <div style="position: relative;">
+          <input type="password" id="password" placeholder="Enter Business Password" />
+          <button class="password-toggle" onclick="togglePassword()">👁️</button>
+        </div>
+        <button class="btn-login" onclick="login()">Access Account</button>
         <div id="error" class="error"></div>
       </div>
 
       <script>
+        function togglePassword() {
+          const pwd = document.getElementById('password');
+          pwd.type = pwd.type === 'password' ? 'text' : 'password';
+        }
+
         function login() {
           const pwd = document.getElementById('password').value;
           if (pwd === '${BUSINESS_PASSWORD}') {
@@ -227,7 +244,7 @@ app.get('/app', (req, res) => {
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
           font-family: system-ui;
-          background: radial-gradient(circle, rgba(255,215,0,0.15), #000);
+          background: #000;
           color: #fff;
           line-height: 1.6;
           padding: 1.5rem;
@@ -260,14 +277,12 @@ app.get('/app', (req, res) => {
           text-transform: uppercase;
         }
         .card {
-          background: rgba(17, 17, 17, 0.9);
+          background: #0f0f14;
           border-radius: 18px;
           padding: 1.7rem;
           margin-bottom: 1.7rem;
-          box-shadow: 
-            0 6px 16px rgba(0,0,0,0.4),
-            inset 0 0 10px rgba(255,215,0,0.1);
-          border: 1px solid rgba(255,215,0,0.2);
+          box-shadow: 0 0 20px rgba(255, 215, 0, 0.15);
+          border: 1px solid rgba(255, 215, 0, 0.1);
         }
         .card h2 {
           color: #FFD700;
@@ -285,7 +300,7 @@ app.get('/app', (req, res) => {
           font-size: 1.02rem;
         }
         input {
-          background: #1a1a1f;
+          background: #111;
           color: white;
           border: 1px solid #333;
           outline: none;
@@ -347,24 +362,24 @@ app.get('/app', (req, res) => {
     <body>
       <header>
         <h1>KS1 Empower Pay</h1>
-        <p class="subtitle">Non-custodial • (AFRICA) Alkebulan-first • Nonprofit-powered</p>
+        <p class="subtitle">Non-custodial • Alkebulan (AFRICA)-first • Nonprofit-powered</p>
       </header>
 
       <div class="card">
         <h2>Create Payment</h2>
         <input type="number" id="amount" placeholder="Amount in GHS" min="1" value="100"/>
         <input type="text" id="phone" placeholder="Customer MoMo number (e.g. +233...)" value="+233240000000"/>
-        <button class="btn-momo" onclick="requestMomo()"><span class="blue-heart">💙</span> Pay & Empower (AFRICA) Alkebulan</button>
+        <button class="btn-momo" onclick="requestMomo()"><span class="blue-heart">💙</span> Pay & Empower Alkebulan (AFRICA)</button>
         <div id="result"></div>
       </div>
 
       <div class="footer">
         © 2026 KS1 Empire Group & Foundation (KS1EGF)<br/>
-        A 0.3% solidarity contribution covers processing and funds (AFRICA) Alkebulan digital freedom.
+        A 0.3% solidarity contribution funds Alkebulan (AFRICA) digital freedom.
       </div>
 
       <script>
-        // Auto-logout after 35 minutes of inactivity
+        // Auto-logout after 30 seconds of inactivity
         let inactivityTimer;
         function resetTimer() {
           clearTimeout(inactivityTimer);
@@ -372,7 +387,7 @@ app.get('/app', (req, res) => {
             localStorage.removeItem('ks1_auth');
             alert('Session expired for security. Please log in again.');
             window.location.href = '/';
-          }, 2100000); // 35 mins = 2,100,000 ms
+          }, 30000); // 30 seconds
         }
         ['click','touchstart','keypress','scroll'].forEach(e => {
           document.addEventListener(e, resetTimer, true);
@@ -411,7 +426,7 @@ app.get('/app', (req, res) => {
                   Timestamp: \${new Date().toLocaleString()}
                 </div>
                 <br/>
-                You just empowered (AFRICA) Alkebulan digital freedom!
+                You just empowered Alkebulan (AFRICA) digital freedom!
               \`;
               r.innerHTML = '<strong>🎉 Payment Completed!</strong><br/>' + receipt;
             }
