@@ -95,7 +95,7 @@ app.get('/api/commissions', async (req, res) => {
   }
 });
 
-// === LANDING PAGE: PERFECT CENTER ===
+// === LANDING PAGE: CENTERED + TRADEMARK FIXED ===
 app.get('/', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -117,7 +117,10 @@ app.get('/', (req, res) => {
           min-height: 100vh;
           display: flex;
           flex-direction: column;
-          justify-content: center; /* ✅ PERFECT VERTICAL CENTER */
+          justify-content: center;
+          /* ✅ Push content slightly down for true center feel */
+          padding-top: 2vh;
+          padding-bottom: 2vh;
         }
         .login-card {
           background: rgba(12, 12, 18, 0.95);
@@ -243,7 +246,7 @@ app.get('/', (req, res) => {
       </div>
 
       <div class="footer">
-        © 2026 ShineGPT – KS1 Empire Group & Foundation (KS1EGF)<br/>
+        © 2026 KS1 Empower Pay – A nonprofit project by KS1 Empire Group & Foundation (KS1EGF)<br/>
         <span class="trademark">Built for Alkebulan (Africa) SMEs, Businesses And Entrepreneurs — united in digital sovereignty and shared prosperity.</span>
       </div>
 
@@ -304,7 +307,9 @@ app.get('/app', (req, res) => {
           min-height: 100vh;
           display: flex;
           flex-direction: column;
-          justify-content: center; /* ✅ CENTER ENTIRE DASHBOARD */
+          justify-content: center;
+          padding-top: 2vh;
+          padding-bottom: 2vh;
         }
         .container {
           background: rgba(12, 12, 18, 0.95);
@@ -345,7 +350,6 @@ app.get('/app', (req, res) => {
           margin-bottom: 1.2rem;
           box-shadow: 0 3px 10px rgba(0,0,0,0.2);
           border: 1px solid rgba(255, 215, 0, 0.07);
-          /* ✅ SMALLER CARD */
         }
         .card h2 {
           color: #FFD700;
@@ -447,7 +451,7 @@ app.get('/app', (req, res) => {
       </div>
 
       <div class="footer">
-        © 2026 ShineGPT – A nonprofit project by KS1 Empire Group & Foundation (KS1EGF)<br/>
+        © 2026 KS1 Empower Pay – A nonprofit project by KS1 Empire Group & Foundation (KS1EGF)<br/>
         <span class="trademark">Built for Alkebulan (Africa) SMEs, Businesses And Entrepreneurs — united in digital sovereignty and shared prosperity.</span>
       </div>
 
