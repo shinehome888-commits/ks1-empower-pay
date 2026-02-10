@@ -356,7 +356,9 @@ app.get('/app', (req, res) => {
           margin-bottom: 0.8rem;
           font-weight: 700;
         }
-        .card input[type="text"]:first-of-type {
+        .card input[type="text"]:nth-of-type(1),
+        .card input[type="text"]:nth-of-type(2),
+        .card input[type="text"]:nth-of-type(3) {
           font-weight: 600;
           background: #15151a;
         }
@@ -407,7 +409,7 @@ app.get('/app', (req, res) => {
           color: #3b82f6;
           text-shadow: 0 0 5px rgba(59, 130, 246, 0.7);
           font-weight: 800;
-          margin: 0 3px;
+          margin-right: 6px;
         }
         #result {
           margin-top: 0.8rem;
@@ -463,10 +465,12 @@ app.get('/app', (req, res) => {
         <div class="card">
           <h2>Create Mobile Money Payment</h2>
           <input type="text" id="business-name" placeholder="Business Name (e.g. Kwame Store)" />
+          <input type="text" id="client-name" placeholder="Client Name (e.g. Ama Serwaa)" />
+          <input type="text" id="business-phone" placeholder="Business Phone (e.g. +233240000000)" />
           <input type="number" id="amount" placeholder="Amount in GHS" min="1" value="100"/>
-          <input type="text" id="phone" placeholder="Customer MoMo number (e.g. +233...)" value="+233240000000"/>
+          <input type="text" id="customer-phone" placeholder="Customer MoMo number (e.g. +233...)" value="+233240000000"/>
           <button class="btn-momo" onclick="requestMomo()">
-            <span class="blue-heart">💙</span> Pay & Empower Alkebulan (AFRICA) <span class="blue-heart">💙</span>
+            <span class="blue-heart">💙</span> Pay & Empower Alkebulan (AFRICA)
           </button>
           <div id="result"></div>
         </div>
@@ -493,32 +497,36 @@ app.get('/app', (req, res) => {
         resetTimer();
 
         async function requestMomo() {
-          const businessName = document.getElementById('business-name').value.trim() || 'Merchant';
+          const businessName = document.getElementById('business-name').value.trim() || '—';
+          const clientName = document.getElementById('client-name').value.trim() || '—';
+          const businessPhone = document.getElementById('business-phone').value.trim() || '—';
           const amount = parseFloat(document.getElementById('amount').value);
-          const phone = document.getElementById('phone').value.trim();
+          const customerPhone = document.getElementById('customer-phone').value.trim();
           const r = document.getElementById('result');
           
-          if (!amount || amount <= 0 || !phone.startsWith('+233')) {
-            r.innerHTML = 'Enter valid GHS amount and +233 number';
+          if (!amount || amount <= 0 || !customerPhone.startsWith('+233')) {
+            r.innerHTML = 'Enter valid GHS amount and +233 customer number';
             r.style.display = 'block';
             return;
           }
 
-          r.innerHTML = 'Sending request to ' + phone + '...';
+          r.innerHTML = 'Sending request to ' + customerPhone + '...';
           r.style.display = 'block';
 
           try {
             const res = await fetch('/api/momo/request', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ amount, phone })
+              body: JSON.stringify({ amount, phone: customerPhone })
             });
             const data = await res.json();
             if (data.success) {
               const receiptText = 
                 \`KS1 EMPOWER PAY\\n\` +
                 \`────────────────────\\n\` +
-                \`Business: \${businessName}\\n\\n\` +
+                \`Business Name: \${businessName}\\n\` +
+                \`Client Name: \${clientName}\\n\` +
+                \`Business Phone: \${businessPhone}\\n\\n\` +
                 \`📄 TRANSACTION RECEIPT\\n\\n\` +
                 \`Gross Amount: GHS \${data.amount}\\n\` +
                 \`Solidarity Contribution (0.3%): GHS \${(data.amount * 0.003).toFixed(2)}\\n\` +
@@ -534,7 +542,9 @@ app.get('/app', (req, res) => {
                 '<div style="font-family: monospace; font-size: 0.89rem; line-height: 1.5;">' +
                   '<strong>KS1 EMPOWER PAY</strong><br/>' +
                   '<hr style="border: 0; border-top: 1px solid #FFD700; margin: 0.4rem 0;" />' +
-                  '<strong>Business:</strong> ' + businessName + '<br/><br/>' +
+                  '<strong>Business Name:</strong> ' + businessName + '<br/>' +
+                  '<strong>Client Name:</strong> ' + clientName + '<br/>' +
+                  '<strong>Business Phone:</strong> ' + businessPhone + '<br/><br/>' +
                   '<strong>📄 TRANSACTION RECEIPT</strong><br/><br/>' +
                   'Gross Amount: GHS ' + data.amount + '<br/>' +
                   'Solidarity Contribution (0.3%): GHS ' + (data.amount * 0.003).toFixed(2) + '<br/>' +
