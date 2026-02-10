@@ -1,4 +1,4 @@
-// KS1 EMPOWER PAY – ALKEBULAN (AFRICA) EDITION • FINAL PRESENTATION
+// KS1 EMPOWER PAY – ALKEBULAN (AFRICA) EDITION • FINAL BRAND
 // Non-custodial • Alkebulan (AFRICA)-first • Nonprofit-powered
 
 const express = require('express');
@@ -284,7 +284,7 @@ app.get('/', (req, res) => {
   `);
 });
 
-// === MAIN APP WITH WHATSAPP SHARE BUTTON ===
+// === MAIN APP WITH BUSINESS NAME & WHATSAPP SHARE ===
 app.get('/app', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -355,6 +355,10 @@ app.get('/app', (req, res) => {
           font-size: 1.15rem;
           margin-bottom: 0.8rem;
           font-weight: 700;
+        }
+        .card input[type="text"]:first-of-type {
+          font-weight: 600;
+          background: #15151a;
         }
         input, button {
           width: 100%;
@@ -458,6 +462,7 @@ app.get('/app', (req, res) => {
 
         <div class="card">
           <h2>Create Payment</h2>
+          <input type="text" id="business-name" placeholder="Business Name (e.g. Kwame Store)" />
           <input type="number" id="amount" placeholder="Amount in GHS" min="1" value="100"/>
           <input type="text" id="phone" placeholder="Customer MoMo number (e.g. +233...)" value="+233240000000"/>
           <button class="btn-momo" onclick="requestMomo()">
@@ -488,6 +493,7 @@ app.get('/app', (req, res) => {
         resetTimer();
 
         async function requestMomo() {
+          const businessName = document.getElementById('business-name').value.trim() || 'Merchant';
           const amount = parseFloat(document.getElementById('amount').value);
           const phone = document.getElementById('phone').value.trim();
           const r = document.getElementById('result');
@@ -510,6 +516,9 @@ app.get('/app', (req, res) => {
             const data = await res.json();
             if (data.success) {
               const receiptText = 
+                \`KS1 EMPOWER PAY\\n\` +
+                \`────────────────────\\n\` +
+                \`Business: \${businessName}\\n\\n\` +
                 \`📄 TRANSACTION RECEIPT\\n\\n\` +
                 \`Gross Amount: GHS \${data.amount}\\n\` +
                 \`Solidarity Contribution (0.3%): GHS \${(data.amount * 0.003).toFixed(2)}\\n\` +
@@ -523,6 +532,9 @@ app.get('/app', (req, res) => {
 
               const receiptHtml = 
                 '<div style="font-family: monospace; font-size: 0.89rem; line-height: 1.5;">' +
+                  '<strong>KS1 EMPOWER PAY</strong><br/>' +
+                  '<hr style="border: 0; border-top: 1px solid #FFD700; margin: 0.4rem 0;" />' +
+                  '<strong>Business:</strong> ' + businessName + '<br/><br/>' +
                   '<strong>📄 TRANSACTION RECEIPT</strong><br/><br/>' +
                   'Gross Amount: GHS ' + data.amount + '<br/>' +
                   'Solidarity Contribution (0.3%): GHS ' + (data.amount * 0.003).toFixed(2) + '<br/>' +
