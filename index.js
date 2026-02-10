@@ -1,14 +1,15 @@
-// KS1 EMPOWER PAY – ALKEBULAN EDITION (RENDER-SAFE)
-// Non-custodial • Alkebulan-first • Nonprofit-powered
-// 0.3% solidarity contribution covers Hubtel fee + funds mission
+// KS1 EMPOWER PAY – (AFRICA) ALKEBULAN EDITION WITH BUSINESS LOGIN
+// Non-custodial • (AFRICA) Alkebulan-first • Nonprofit-powered
 
 const express = require('express');
 const { Pool } = require('pg');
 const app = express();
 app.use(express.json());
 
-// === DATABASE SETUP ===
+// === CONFIGURATION ===
+const BUSINESS_PASSWORD = process.env.BUSINESS_PASSWORD || "ks1empower";
 const DB_URL = process.env.DATABASE_URL;
+
 if (!DB_URL) {
   console.error("❌ FATAL: DATABASE_URL not set in Render Environment");
   process.exit(1);
@@ -88,7 +89,7 @@ app.get('/api/commissions', async (req, res) => {
   }
 });
 
-// === MAIN FRONTEND ===
+// === LOGIN PAGE ===
 app.get('/', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -100,8 +101,145 @@ app.get('/', (req, res) => {
       <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-          font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-          background: #000;
+          font-family: system-ui;
+          background: radial-gradient(circle, rgba(255,215,0,0.15), #000);
+          color: #fff;
+          line-height: 1.6;
+          padding: 1.5rem;
+          max-width: 500px;
+          margin: 0 auto;
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+        }
+        .login-card {
+          background: rgba(10, 10, 15, 0.9);
+          border-radius: 20px;
+          padding: 2rem;
+          box-shadow: 
+            0 0 20px rgba(255, 215, 0, 0.3),
+            inset 0 0 10px rgba(255, 215, 0, 0.1);
+          border: 1px solid rgba(255, 215, 0, 0.2);
+        }
+        h1 {
+          font-size: 2.3rem;
+          font-weight: 900;
+          color: #1e3a8a;
+          text-align: center;
+          margin-bottom: 1.8rem;
+          text-shadow: 
+            0 4px 0 #1d4ed8,
+            0 6px 12px rgba(0,0,0,0.5);
+        }
+        input {
+          width: 100%;
+          padding: 0.95rem;
+          margin: 0.8rem 0;
+          border: none;
+          border-radius: 12px;
+          background: #1a1a1f;
+          color: white;
+          border: 1px solid #333;
+          outline: none;
+        }
+        input:focus {
+          border-color: #FFD700;
+          box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.3);
+        }
+        .btn-login {
+          background: linear-gradient(135deg, #FFD700, #D4AF37);
+          color: #000;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          font-size: 1.1rem;
+          padding: 0.95rem;
+          border: none;
+          border-radius: 12px;
+          width: 100%;
+          cursor: pointer;
+          box-shadow: 
+            0 5px 0 #B8860B,
+            0 7px 14px rgba(0,0,0,0.4);
+          transition: all 0.15s ease;
+        }
+        .btn-login:hover {
+          background: linear-gradient(135deg, #FFE04D, #E6C24A);
+          transform: translateY(2px);
+          box-shadow: 
+            0 3px 0 #B8860B,
+            0 5px 12px rgba(0,0,0,0.4);
+        }
+        .btn-login:active {
+          transform: translateY(5px);
+          box-shadow: 
+            0 0 0 #B8860B,
+            0 3px 8px rgba(0,0,0,0.3);
+        }
+        .error {
+          color: #ef4444;
+          text-align: center;
+          margin-top: 1rem;
+          font-size: 0.9rem;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="login-card">
+        <h1>KS1 Empower Pay</h1>
+        <input type="password" id="password" placeholder="Enter Business Password" />
+        <button class="btn-login" onclick="login()">Create / Access Account</button>
+        <div id="error" class="error"></div>
+      </div>
+
+      <script>
+        function login() {
+          const pwd = document.getElementById('password').value;
+          if (pwd === '${BUSINESS_PASSWORD}') {
+            localStorage.setItem('ks1_auth', 'true');
+            localStorage.setItem('ks1_last_active', Date.now());
+            window.location.href = '/app';
+          } else {
+            document.getElementById('error').textContent = 'Invalid password. Contact KS1EGF.';
+          }
+        }
+
+        // Auto-logout after 35 minutes of inactivity
+        let inactivityTimer;
+        function resetTimer() {
+          clearTimeout(inactivityTimer);
+          inactivityTimer = setTimeout(() => {
+            localStorage.removeItem('ks1_auth');
+            localStorage.removeItem('ks1_last_active');
+            window.location.reload();
+          }, 2100000); // 35 mins = 2,100,000 ms
+        }
+
+        // Track user activity
+        ['click', 'touchstart', 'keypress', 'scroll'].forEach(event => {
+          document.addEventListener(event, resetTimer, true);
+        });
+      </script>
+    </body>
+    </html>
+  `);
+});
+
+// === MAIN APP AFTER LOGIN ===
+app.get('/app', (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+      <title>KS1 Empower Pay</title>
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+          font-family: system-ui;
+          background: radial-gradient(circle, rgba(255,215,0,0.15), #000);
           color: #fff;
           line-height: 1.6;
           padding: 1.5rem;
@@ -114,11 +252,13 @@ app.get('/', (req, res) => {
           margin-bottom: 1.8rem;
         }
         h1 {
-          font-size: 2.1rem;
-          font-weight: 800;
-          background: linear-gradient(90deg, #3b82f6, #8b5cf6);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
+          font-size: 2.3rem;
+          font-weight: 900;
+          color: #1e3a8a;
+          text-shadow: 
+            0 4px 0 #1d4ed8,
+            0 6px 12px rgba(0,0,0,0.5);
+          letter-spacing: -0.5px;
         }
         .subtitle {
           color: #fff;
@@ -132,12 +272,14 @@ app.get('/', (req, res) => {
           text-transform: uppercase;
         }
         .card {
-          background: #111;
+          background: rgba(17, 17, 17, 0.9);
           border-radius: 18px;
           padding: 1.7rem;
           margin-bottom: 1.7rem;
-          box-shadow: 0 6px 16px rgba(0,0,0,0.4);
-          border: 1px solid #222;
+          box-shadow: 
+            0 6px 16px rgba(0,0,0,0.4),
+            inset 0 0 10px rgba(255,215,0,0.1);
+          border: 1px solid rgba(255,215,0,0.2);
         }
         .card h2 {
           color: #FFD700;
@@ -189,6 +331,12 @@ app.get('/', (req, res) => {
             0 0 0 #B8860B,
             0 3px 8px rgba(0,0,0,0.3);
         }
+        .blue-heart {
+          color: #3b82f6;
+          text-shadow: 0 0 8px rgba(59, 130, 246, 0.8);
+          font-weight: 900;
+          margin-right: 6px;
+        }
         #result {
           margin-top: 1.1rem;
           padding: 1.1rem;
@@ -211,23 +359,38 @@ app.get('/', (req, res) => {
     <body>
       <header>
         <h1>KS1 Empower Pay</h1>
-        <p class="subtitle">Non-custodial • Alkebulan-first • Nonprofit-powered</p>
+        <p class="subtitle">Non-custodial • (AFRICA) Alkebulan-first • Nonprofit-powered</p>
       </header>
 
       <div class="card">
         <h2>Create Payment</h2>
         <input type="number" id="amount" placeholder="Amount in GHS" min="1" value="100"/>
         <input type="text" id="phone" placeholder="Customer MoMo number (e.g. +233...)" value="+233240000000"/>
-        <button class="btn-momo" onclick="requestMomo()">Pay & Empower Alkebulan 💛</button>
+        <button class="btn-momo" onclick="requestMomo()"><span class="blue-heart">💙</span> Pay & Empower (AFRICA) Alkebulan</button>
         <div id="result"></div>
       </div>
 
       <div class="footer">
         © 2026 KS1 Empire Group & Foundation (KS1EGF)<br/>
-        A 0.3% solidarity contribution covers processing and funds Alkebulan digital freedom.
+        A 0.3% solidarity contribution covers processing and funds (AFRICA) Alkebulan digital freedom.
       </div>
 
       <script>
+        // Auto-logout after 35 minutes of inactivity
+        let inactivityTimer;
+        function resetTimer() {
+          clearTimeout(inactivityTimer);
+          inactivityTimer = setTimeout(() => {
+            localStorage.removeItem('ks1_auth');
+            alert('Session expired for security. Please log in again.');
+            window.location.href = '/';
+          }, 2100000);
+        }
+        ['click','touchstart','keypress','scroll'].forEach(e => {
+          document.addEventListener(e, resetTimer, true);
+        });
+        resetTimer();
+
         async function requestMomo() {
           const amount = parseFloat(document.getElementById('amount').value);
           const phone = document.getElementById('phone').value.trim();
@@ -260,7 +423,7 @@ app.get('/', (req, res) => {
                   Timestamp: \${new Date().toLocaleString()}
                 </div>
                 <br/>
-                You just empowered Alkebulan (AFRICA) digital freedom!
+                You just empowered (AFRICA) Alkebulan digital freedom!
               \`;
               r.innerHTML = '<strong>🎉 Payment Completed!</strong><br/>' + receipt;
             }
