@@ -1,4 +1,4 @@
-// KS1 EMPOWER PAY – ALKEBULAN (AFRICA) EDITION • CENTERED UI
+// KS1 EMPOWER PAY – ALKEBULAN (AFRICA) EDITION • PERFECT CENTERING
 // Non-custodial • Alkebulan (AFRICA)-first • Nonprofit-powered
 
 const express = require('express');
@@ -95,7 +95,7 @@ app.get('/api/commissions', async (req, res) => {
   }
 });
 
-// === LANDING PAGE: CENTERED & COMPACT ===
+// === LANDING PAGE: PERFECTLY CENTERED ===
 app.get('/', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -111,53 +111,55 @@ app.get('/', (req, res) => {
           background: #000;
           color: #fff;
           line-height: 1.5;
-          padding: 1rem;
+          padding: 0 1rem;
           max-width: 480px;
           margin: 0 auto;
           min-height: 100vh;
           display: flex;
           flex-direction: column;
-          justify-content: center;
+          justify-content: center; /* ✅ PERFECT VERTICAL CENTER */
         }
         .login-card {
-          background: rgba(12, 12, 18, 0.92);
+          background: rgba(12, 12, 18, 0.94);
           border-radius: 18px;
-          padding: 1.8rem 1.5rem;
+          padding: 1.6rem 1.4rem;
           box-shadow: 
             0 8px 20px rgba(255, 215, 0, 0.18),
             inset 0 0 12px rgba(255, 215, 0, 0.06);
           border: 1px solid rgba(255, 215, 0, 0.12);
+          width: 100%;
+          max-width: 420px;
         }
         h1 {
-          font-size: 1.9rem;
+          font-size: 1.8rem;
           font-weight: 800;
           color: #1e3a8a;
           text-align: center;
-          margin-bottom: 1.4rem;
+          margin-bottom: 1.3rem;
           letter-spacing: -0.5px;
           text-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
         .subtitle {
           color: #FFD700;
-          font-size: 0.95rem;
+          font-size: 0.92rem;
           text-align: center;
-          margin-bottom: 1.6rem;
+          margin-bottom: 1.5rem;
           letter-spacing: 0.4px;
           font-weight: 600;
         }
         .form-group {
-          margin-bottom: 1.1rem;
+          margin-bottom: 1rem;
           position: relative;
         }
         input {
           width: 100%;
-          padding: 0.8rem 1rem;
+          padding: 0.75rem 0.9rem;
           border: none;
           border-radius: 10px;
           background: #111;
           color: white;
           border: 1px solid #333;
-          font-size: 0.95rem;
+          font-size: 0.93rem;
         }
         input:focus {
           border-color: #FFD700;
@@ -166,14 +168,14 @@ app.get('/', (req, res) => {
         }
         .password-toggle {
           position: absolute;
-          right: 1rem;
+          right: 0.9rem;
           top: 50%;
           transform: translateY(-50%);
           background: none;
           border: none;
           color: #aaa;
           cursor: pointer;
-          font-size: 1.1rem;
+          font-size: 1.05rem;
         }
         .btn-login {
           background: linear-gradient(135deg, #FFD700, #D4AF37);
@@ -181,8 +183,8 @@ app.get('/', (req, res) => {
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.4px;
-          font-size: 0.98rem;
-          padding: 0.85rem;
+          font-size: 0.95rem;
+          padding: 0.8rem;
           border: none;
           border-radius: 10px;
           width: 100%;
@@ -208,20 +210,20 @@ app.get('/', (req, res) => {
         .error {
           color: #ef4444;
           text-align: center;
-          margin-top: 1rem;
-          font-size: 0.88rem;
+          margin-top: 0.9rem;
+          font-size: 0.85rem;
           min-height: 1.2rem;
         }
         .footer {
           text-align: center;
           color: #777;
-          font-size: 0.78rem;
-          padding-top: 1.4rem;
+          font-size: 0.75rem;
+          padding-top: 1.2rem;
           margin-top: auto;
         }
         .trademark {
           color: #aaa;
-          font-size: 0.75rem;
+          font-size: 0.72rem;
           margin-top: 0.4rem;
           font-style: italic;
           line-height: 1.4;
@@ -281,7 +283,7 @@ app.get('/', (req, res) => {
   `);
 });
 
-// === MAIN APP (CENTERED) ===
+// === MAIN APP: CENTERED & COMPACT ===
 app.get('/app', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -297,27 +299,33 @@ app.get('/app', (req, res) => {
           background: #000;
           color: #fff;
           line-height: 1.5;
-          padding: 1rem;
-          max-width: 520px;
+          padding: 0 1rem;
+          max-width: 500px;
           margin: 0 auto;
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+          justify-content: center; /* ✅ CENTER DASHBOARD TOO */
         }
         .container {
-          background: rgba(12, 12, 18, 0.92);
+          background: rgba(12, 12, 18, 0.94);
           border-radius: 18px;
-          padding: 1.8rem 1.5rem;
-          margin-bottom: 1.8rem;
+          padding: 1.6rem 1.4rem;
+          margin-bottom: 1.5rem;
           box-shadow: 
             0 8px 20px rgba(255, 215, 0, 0.18),
             inset 0 0 12px rgba(255, 215, 0, 0.06);
           border: 1px solid rgba(255, 215, 0, 0.12);
+          width: 100%;
+          max-width: 460px;
         }
         header {
           text-align: center;
-          padding: 1.2rem 0;
-          margin-bottom: 1.6rem;
+          padding: 1rem 0;
+          margin-bottom: 1.4rem;
         }
         h1 {
-          font-size: 1.9rem;
+          font-size: 1.8rem;
           font-weight: 800;
           color: #1e3a8a;
           letter-spacing: -0.5px;
@@ -325,7 +333,7 @@ app.get('/app', (req, res) => {
         }
         .subtitle {
           color: #fff;
-          font-size: 0.95rem;
+          font-size: 0.92rem;
           font-weight: 700;
           letter-spacing: 0.6px;
           margin-top: 0.4rem;
@@ -335,24 +343,24 @@ app.get('/app', (req, res) => {
         .card {
           background: #0f0f14;
           border-radius: 16px;
-          padding: 1.5rem;
-          margin-bottom: 1.5rem;
+          padding: 1.4rem;
+          margin-bottom: 1.4rem;
           box-shadow: 0 4px 12px rgba(0,0,0,0.2);
           border: 1px solid rgba(255, 215, 0, 0.08);
         }
         .card h2 {
           color: #FFD700;
-          font-size: 1.25rem;
-          margin-bottom: 1rem;
+          font-size: 1.2rem;
+          margin-bottom: 0.9rem;
           font-weight: 700;
         }
         input, button {
           width: 100%;
-          padding: 0.8rem;
-          margin: 0.55rem 0;
+          padding: 0.75rem;
+          margin: 0.5rem 0;
           border: none;
           border-radius: 10px;
-          font-size: 0.95rem;
+          font-size: 0.93rem;
         }
         input {
           background: #111;
@@ -370,7 +378,7 @@ app.get('/app', (req, res) => {
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.4px;
-          font-size: 0.98rem;
+          font-size: 0.95rem;
           box-shadow: 
             0 4px 0 #B8860B,
             0 6px 10px rgba(0,0,0,0.35);
@@ -396,27 +404,27 @@ app.get('/app', (req, res) => {
           margin-right: 5px;
         }
         #result {
-          margin-top: 1rem;
-          padding: 1rem;
+          margin-top: 0.9rem;
+          padding: 0.9rem;
           border-radius: 10px;
           display: none;
           background: #1e3a8a;
           border-left: 3px solid #3b82f6;
           color: #dbeafe;
           font-weight: 600;
-          font-size: 0.92rem;
+          font-size: 0.9rem;
           line-height: 1.5;
         }
         .footer {
           text-align: center;
           color: #777;
-          font-size: 0.78rem;
-          padding-top: 1.4rem;
-          border-top: 1px solid #222;
+          font-size: 0.75rem;
+          padding-top: 1.2rem;
+          margin-top: auto;
         }
         .trademark {
           color: #aaa;
-          font-size: 0.75rem;
+          font-size: 0.72rem;
           margin-top: 0.4rem;
           font-style: italic;
           line-height: 1.4;
