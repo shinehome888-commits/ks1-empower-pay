@@ -259,7 +259,7 @@ app.get('/', (req, res) => {
       </div>
 
       <script>
-        // Auto-logout after 30 seconds of inactivity (optional: can be removed if no auth)
+        // Auto-logout after 30 seconds of inactivity (optional)
         let inactivityTimer;
         function resetTimer() {
           clearTimeout(inactivityTimer);
