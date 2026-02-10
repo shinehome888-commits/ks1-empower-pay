@@ -284,7 +284,7 @@ app.get('/', (req, res) => {
   `);
 });
 
-// === MAIN APP WITH BUSINESS NAME & WHATSAPP SHARE ===
+// === MAIN APP (DASHBOARD) ===
 app.get('/app', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -329,9 +329,9 @@ app.get('/app', (req, res) => {
         h1 {
           font-size: 1.7rem;
           font-weight: 800;
-          color: #1e3a8a;
+          color: #1e3a8a; /* ✅ Deep royal blue */
           letter-spacing: -0.4px;
-          text-shadow: 0 2px 3px rgba(0,0,0,0.3);
+          text-shadow: 0 2px 3px rgba(0,0,0,0.3); /* ✅ 3D effect */
         }
         .subtitle {
           color: #fff;
@@ -456,7 +456,7 @@ app.get('/app', (req, res) => {
     <body>
       <div class="container">
         <header>
-          <h1>KS1 Empower Pay</h1>
+          <h1>Dashboard</h1> <!-- ✅ Changed from "KS1 Empower Pay" -->
           <p class="subtitle">Non-custodial • Alkebulan (AFRICA)-first • Nonprofit-powered</p>
         </header>
 
