@@ -284,7 +284,7 @@ app.get('/', (req, res) => {
   `);
 });
 
-// === MAIN APP WITH COPY RECEIPT ===
+// === MAIN APP WITH WHATSAPP SHARE BUTTON ===
 app.get('/app', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -403,7 +403,7 @@ app.get('/app', (req, res) => {
           color: #3b82f6;
           text-shadow: 0 0 5px rgba(59, 130, 246, 0.7);
           font-weight: 800;
-          margin-right: 5px;
+          margin: 0 3px;
         }
         #result {
           margin-top: 0.8rem;
@@ -417,19 +417,21 @@ app.get('/app', (req, res) => {
           font-size: 0.89rem;
           line-height: 1.5;
         }
-        .copy-btn {
-          background: #3b82f6;
-          color: white;
-          border: none;
+        .whatsapp-btn {
+          display: inline-block;
+          background: linear-gradient(135deg, #FFD700, #D4AF37);
+          color: #000;
+          text-decoration: none;
+          font-weight: 700;
           padding: 0.4rem 0.8rem;
           border-radius: 6px;
           font-size: 0.85rem;
-          cursor: pointer;
+          box-shadow: 0 3px 0 #B8860B, 0 5px 9px rgba(0,0,0,0.3);
           margin-top: 0.5rem;
-          display: inline-block;
         }
-        .copy-btn:hover {
-          background: #2563eb;
+        .whatsapp-btn:hover {
+          background: linear-gradient(135deg, #FFE04D, #E6C24A);
+          transform: translateY(1px);
         }
         .footer {
           text-align: center;
@@ -458,7 +460,9 @@ app.get('/app', (req, res) => {
           <h2>Create Payment</h2>
           <input type="number" id="amount" placeholder="Amount in GHS" min="1" value="100"/>
           <input type="text" id="phone" placeholder="Customer MoMo number (e.g. +233...)" value="+233240000000"/>
-          <button class="btn-momo" onclick="requestMomo()"><span class="blue-heart">💙</span> Pay & Empower Alkebulan (AFRICA)</button>
+          <button class="btn-momo" onclick="requestMomo()">
+            <span class="blue-heart">💙</span> Pay & Empower Alkebulan (AFRICA) <span class="blue-heart">💙</span>
+          </button>
           <div id="result"></div>
         </div>
       </div>
@@ -483,34 +487,6 @@ app.get('/app', (req, res) => {
         });
         resetTimer();
 
-        function copyReceipt(text) {
-          if (navigator.clipboard) {
-            navigator.clipboard.writeText(text).then(() => {
-              alert('✅ Receipt copied! Paste it into WhatsApp or any app.');
-            }).catch(err => {
-              fallbackCopy(text);
-            });
-          } else {
-            fallbackCopy(text);
-          }
-        }
-
-        function fallbackCopy(text) {
-          const textarea = document.createElement('textarea');
-          textarea.value = text;
-          textarea.style.position = 'fixed';
-          textarea.style.opacity = '0';
-          document.body.appendChild(textarea);
-          textarea.select();
-          try {
-            document.execCommand('copy');
-            alert('✅ Receipt copied! Paste it into WhatsApp.');
-          } catch (err) {
-            alert('❌ Failed to copy. Please select and copy manually.');
-          }
-          document.body.removeChild(textarea);
-        }
-
         async function requestMomo() {
           const amount = parseFloat(document.getElementById('amount').value);
           const phone = document.getElementById('phone').value.trim();
@@ -533,7 +509,6 @@ app.get('/app', (req, res) => {
             });
             const data = await res.json();
             if (data.success) {
-              // ✅ SAFE STRING GENERATION
               const receiptText = 
                 \`📄 TRANSACTION RECEIPT\\n\\n\` +
                 \`Gross Amount: GHS \${data.amount}\\n\` +
@@ -542,6 +517,9 @@ app.get('/app', (req, res) => {
                 \`Status: Completed\\n\` +
                 \`Timestamp: \${new Date().toLocaleString()}\\n\\n\` +
                 \`You just empowered Alkebulan (AFRICA) digital freedom!\`;
+
+              const encodedText = encodeURIComponent(receiptText);
+              const whatsappUrl = \`https://wa.me/?text=\${encodedText}\`;
 
               const receiptHtml = 
                 '<div style="font-family: monospace; font-size: 0.89rem; line-height: 1.5;">' +
@@ -553,8 +531,9 @@ app.get('/app', (req, res) => {
                   'Timestamp: ' + new Date().toLocaleString() +
                 '</div>' +
                 '<br/>' +
-                '<button class="copy-btn" onclick="copyReceipt(' + JSON.stringify(receiptText) + ')">' +
-                '📋 Copy Receipt to WhatsApp</button>' +
+                '<a href="' + whatsappUrl + '" target="_blank" class="whatsapp-btn">' +
+                '📱 Share to WhatsApp' +
+                '</a>' +
                 '<br/><br/>' +
                 'You just empowered Alkebulan (AFRICA) digital freedom!';
 
