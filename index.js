@@ -1,4 +1,4 @@
-// KS1 EMPOWER PAY – ALKEBULAN (AFRICA) EDITION • BUSINESS PASSWORD MODE
+// KS1 EMPOWER PAY – ALKEBULAN (AFRICA) EDITION • CENTERED UI
 // Non-custodial • Alkebulan (AFRICA)-first • Nonprofit-powered
 
 const express = require('express');
@@ -12,7 +12,7 @@ const app = express();
 app.use(express.json());
 
 // === CONFIGURATION ===
-const BUSINESS_PASSWORD = process.env.BUSINESS_PASSWORD || "ks1empower2026"; // Default fallback
+const BUSINESS_PASSWORD = process.env.BUSINESS_PASSWORD || "ks1empower2026";
 
 // === DATABASE SETUP ===
 const DB_URL = process.env.DATABASE_URL;
@@ -95,7 +95,7 @@ app.get('/api/commissions', async (req, res) => {
   }
 });
 
-// === LANDING PAGE: BUSINESS PASSWORD ===
+// === LANDING PAGE: CENTERED & COMPACT ===
 app.get('/', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -107,12 +107,12 @@ app.get('/', (req, res) => {
       <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-          font-family: system-ui;
+          font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
           background: #000;
           color: #fff;
-          line-height: 1.6;
+          line-height: 1.5;
           padding: 1rem;
-          max-width: 500px;
+          max-width: 480px;
           margin: 0 auto;
           min-height: 100vh;
           display: flex;
@@ -120,44 +120,44 @@ app.get('/', (req, res) => {
           justify-content: center;
         }
         .login-card {
-          background: rgba(10, 10, 15, 0.95);
-          border-radius: 20px;
-          padding: 2rem;
+          background: rgba(12, 12, 18, 0.92);
+          border-radius: 18px;
+          padding: 1.8rem 1.5rem;
           box-shadow: 
-            0 0 20px rgba(255, 215, 0, 0.2),
-            inset 0 0 10px rgba(255, 215, 0, 0.05);
-          border: 1px solid rgba(255, 215, 0, 0.1);
+            0 8px 20px rgba(255, 215, 0, 0.18),
+            inset 0 0 12px rgba(255, 215, 0, 0.06);
+          border: 1px solid rgba(255, 215, 0, 0.12);
         }
         h1 {
-          font-size: 2.1rem;
-          font-weight: 900;
+          font-size: 1.9rem;
+          font-weight: 800;
           color: #1e3a8a;
           text-align: center;
-          margin-bottom: 1.6rem;
-          text-shadow: 
-            0 3px 0 #1d4ed8,
-            0 5px 10px rgba(0,0,0,0.4);
+          margin-bottom: 1.4rem;
+          letter-spacing: -0.5px;
+          text-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
         .subtitle {
           color: #FFD700;
-          font-size: 1.05rem;
+          font-size: 0.95rem;
           text-align: center;
-          margin-bottom: 1.8rem;
-          letter-spacing: 0.5px;
+          margin-bottom: 1.6rem;
+          letter-spacing: 0.4px;
+          font-weight: 600;
         }
         .form-group {
-          margin-bottom: 1.2rem;
+          margin-bottom: 1.1rem;
           position: relative;
         }
         input {
           width: 100%;
-          padding: 0.85rem 1rem;
+          padding: 0.8rem 1rem;
           border: none;
-          border-radius: 12px;
+          border-radius: 10px;
           background: #111;
           color: white;
           border: 1px solid #333;
-          font-size: 1rem;
+          font-size: 0.95rem;
         }
         input:focus {
           border-color: #FFD700;
@@ -166,56 +166,57 @@ app.get('/', (req, res) => {
         }
         .password-toggle {
           position: absolute;
-          right: 1.1rem;
+          right: 1rem;
           top: 50%;
           transform: translateY(-50%);
           background: none;
           border: none;
           color: #aaa;
           cursor: pointer;
-          font-size: 1.2rem;
+          font-size: 1.1rem;
         }
         .btn-login {
           background: linear-gradient(135deg, #FFD700, #D4AF37);
           color: #000;
-          font-weight: 800;
+          font-weight: 700;
           text-transform: uppercase;
-          letter-spacing: 0.5px;
-          font-size: 1.05rem;
-          padding: 0.9rem;
+          letter-spacing: 0.4px;
+          font-size: 0.98rem;
+          padding: 0.85rem;
           border: none;
-          border-radius: 12px;
+          border-radius: 10px;
           width: 100%;
           cursor: pointer;
           box-shadow: 
-            0 5px 0 #B8860B,
-            0 7px 12px rgba(0,0,0,0.4);
+            0 4px 0 #B8860B,
+            0 6px 10px rgba(0,0,0,0.35);
           transition: all 0.15s ease;
         }
         .btn-login:hover {
           background: linear-gradient(135deg, #FFE04D, #E6C24A);
           transform: translateY(2px);
           box-shadow: 
-            0 3px 0 #B8860B,
-            0 5px 10px rgba(0,0,0,0.4);
+            0 2px 0 #B8860B,
+            0 4px 8px rgba(0,0,0,0.3);
         }
         .btn-login:active {
-          transform: translateY(5px);
+          transform: translateY(4px);
           box-shadow: 
             0 0 0 #B8860B,
-            0 3px 8px rgba(0,0,0,0.3);
+            0 2px 6px rgba(0,0,0,0.25);
         }
         .error {
           color: #ef4444;
           text-align: center;
           margin-top: 1rem;
-          font-size: 0.9rem;
+          font-size: 0.88rem;
+          min-height: 1.2rem;
         }
         .footer {
           text-align: center;
           color: #777;
-          font-size: 0.8rem;
-          padding-top: 1.5rem;
+          font-size: 0.78rem;
+          padding-top: 1.4rem;
           margin-top: auto;
         }
         .trademark {
@@ -223,6 +224,7 @@ app.get('/', (req, res) => {
           font-size: 0.75rem;
           margin-top: 0.4rem;
           font-style: italic;
+          line-height: 1.4;
         }
       </style>
     </head>
@@ -232,7 +234,7 @@ app.get('/', (req, res) => {
         <p class="subtitle">Secure Access for Authorized Merchants</p>
 
         <div class="form-group">
-          <input type="password" id="password" placeholder="Enter Business Password" />
+          <input type="password" id="password" placeholder="Enter Business Password" autocomplete="off" />
           <button class="password-toggle" onclick="togglePassword()">👁️</button>
         </div>
         <button class="btn-login" onclick="login()">Access Dashboard</button>
@@ -261,12 +263,11 @@ app.get('/', (req, res) => {
           const password = document.getElementById('password').value;
           const errorEl = document.getElementById('error');
 
-          if (!password) {
+          if (!password.trim()) {
             errorEl.textContent = 'Please enter the business password';
             return;
           }
 
-          // In real app: send to /api/login, but we'll validate client-side for simplicity
           if (password === '${BUSINESS_PASSWORD}') {
             localStorage.setItem('ks1_auth', 'true');
             window.location.href = '/app';
@@ -280,7 +281,7 @@ app.get('/', (req, res) => {
   `);
 });
 
-// === MAIN APP (PROTECTED) ===
+// === MAIN APP (CENTERED) ===
 app.get('/app', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -292,72 +293,66 @@ app.get('/app', (req, res) => {
       <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-          font-family: system-ui;
+          font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
           background: #000;
           color: #fff;
-          line-height: 1.6;
-          padding: 1.5rem;
-          max-width: 600px;
+          line-height: 1.5;
+          padding: 1rem;
+          max-width: 520px;
           margin: 0 auto;
         }
         .container {
-          background: rgba(10, 10, 15, 0.95);
-          border-radius: 24px;
-          padding: 2.2rem;
-          margin-bottom: 2rem;
+          background: rgba(12, 12, 18, 0.92);
+          border-radius: 18px;
+          padding: 1.8rem 1.5rem;
+          margin-bottom: 1.8rem;
           box-shadow: 
-            0 0 25px rgba(255, 215, 0, 0.25),
-            inset 0 0 15px rgba(255, 215, 0, 0.08);
-          border: 1px solid rgba(255, 215, 0, 0.15);
+            0 8px 20px rgba(255, 215, 0, 0.18),
+            inset 0 0 12px rgba(255, 215, 0, 0.06);
+          border: 1px solid rgba(255, 215, 0, 0.12);
         }
         header {
           text-align: center;
-          padding: 1.6rem 0;
-          margin-bottom: 1.8rem;
+          padding: 1.2rem 0;
+          margin-bottom: 1.6rem;
         }
         h1 {
-          font-size: 2.3rem;
-          font-weight: 900;
+          font-size: 1.9rem;
+          font-weight: 800;
           color: #1e3a8a;
-          text-shadow: 
-            0 4px 0 #1d4ed8,
-            0 6px 12px rgba(0,0,0,0.5);
           letter-spacing: -0.5px;
+          text-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
         .subtitle {
           color: #fff;
-          font-size: 1.1rem;
-          font-weight: 800;
-          letter-spacing: 0.8px;
-          margin-top: 0.5rem;
-          text-shadow: 
-            0 2px 0 #555,
-            0 4px 8px rgba(0,0,0,0.6);
+          font-size: 0.95rem;
+          font-weight: 700;
+          letter-spacing: 0.6px;
+          margin-top: 0.4rem;
+          text-shadow: 0 1px 2px rgba(0,0,0,0.5);
           text-transform: uppercase;
         }
         .card {
           background: #0f0f14;
-          border-radius: 18px;
-          padding: 1.7rem;
-          margin-bottom: 1.7rem;
-          box-shadow: 
-            0 0 20px rgba(255, 215, 0, 0.15);
-          border: 1px solid rgba(255, 215, 0, 0.1);
+          border-radius: 16px;
+          padding: 1.5rem;
+          margin-bottom: 1.5rem;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+          border: 1px solid rgba(255, 215, 0, 0.08);
         }
         .card h2 {
           color: #FFD700;
-          font-size: 1.35rem;
-          margin-bottom: 1.1rem;
+          font-size: 1.25rem;
+          margin-bottom: 1rem;
           font-weight: 700;
-          text-shadow: 0 0 5px rgba(255, 215, 0, 0.25);
         }
         input, button {
           width: 100%;
-          padding: 0.9rem;
-          margin: 0.6rem 0;
+          padding: 0.8rem;
+          margin: 0.55rem 0;
           border: none;
-          border-radius: 12px;
-          font-size: 1.02rem;
+          border-radius: 10px;
+          font-size: 0.95rem;
         }
         input {
           background: #111;
@@ -372,56 +367,59 @@ app.get('/app', (req, res) => {
         .btn-momo {
           background: linear-gradient(135deg, #FFD700, #D4AF37);
           color: #000;
-          font-weight: 800;
+          font-weight: 700;
           text-transform: uppercase;
-          letter-spacing: 0.5px;
-          font-size: 1.08rem;
+          letter-spacing: 0.4px;
+          font-size: 0.98rem;
           box-shadow: 
-            0 5px 0 #B8860B,
-            0 7px 14px rgba(0,0,0,0.4);
+            0 4px 0 #B8860B,
+            0 6px 10px rgba(0,0,0,0.35);
           transition: all 0.15s ease;
         }
         .btn-momo:hover {
           background: linear-gradient(135deg, #FFE04D, #E6C24A);
           transform: translateY(2px);
           box-shadow: 
-            0 3px 0 #B8860B,
-            0 5px 12px rgba(0,0,0,0.4);
+            0 2px 0 #B8860B,
+            0 4px 8px rgba(0,0,0,0.3);
         }
         .btn-momo:active {
-          transform: translateY(5px);
+          transform: translateY(4px);
           box-shadow: 
             0 0 0 #B8860B,
-            0 3px 8px rgba(0,0,0,0.3);
+            0 2px 6px rgba(0,0,0,0.25);
         }
         .blue-heart {
           color: #3b82f6;
-          text-shadow: 0 0 8px rgba(59, 130, 246, 0.8);
-          font-weight: 900;
-          margin-right: 6px;
+          text-shadow: 0 0 6px rgba(59, 130, 246, 0.7);
+          font-weight: 800;
+          margin-right: 5px;
         }
         #result {
-          margin-top: 1.1rem;
-          padding: 1.1rem;
-          border-radius: 12px;
+          margin-top: 1rem;
+          padding: 1rem;
+          border-radius: 10px;
           display: none;
           background: #1e3a8a;
-          border-left: 4px solid #3b82f6;
+          border-left: 3px solid #3b82f6;
           color: #dbeafe;
           font-weight: 600;
+          font-size: 0.92rem;
+          line-height: 1.5;
         }
         .footer {
           text-align: center;
           color: #777;
-          font-size: 0.85rem;
-          padding-top: 1.8rem;
+          font-size: 0.78rem;
+          padding-top: 1.4rem;
           border-top: 1px solid #222;
         }
         .trademark {
           color: #aaa;
-          font-size: 0.8rem;
-          margin-top: 0.5rem;
+          font-size: 0.75rem;
+          margin-top: 0.4rem;
           font-style: italic;
+          line-height: 1.4;
         }
       </style>
     </head>
@@ -447,7 +445,6 @@ app.get('/app', (req, res) => {
       </div>
 
       <script>
-        // Auto-logout after 30 seconds
         let inactivityTimer;
         function resetTimer() {
           clearTimeout(inactivityTimer);
@@ -485,7 +482,7 @@ app.get('/app', (req, res) => {
             const data = await res.json();
             if (data.success) {
               const receipt = 
-                '<div style="font-family: monospace; font-size: 0.95rem;">' +
+                '<div style="font-family: monospace; font-size: 0.9rem; line-height: 1.5;">' +
                   '<strong>📄 TRANSACTION RECEIPT</strong><br/><br/>' +
                   'Gross Amount: GHS ' + data.amount + '<br/>' +
                   'Solidarity Contribution (0.3%): GHS ' + (data.amount * 0.003).toFixed(2) + '<br/>' +
@@ -513,6 +510,5 @@ const PORT = parseInt(process.env.PORT, 10) || 10000;
 initDB().then(() => {
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 KS1 Empower Pay running on port ${PORT}`);
-    console.log(`🔑 Business password: ${BUSINESS_PASSWORD}`);
   });
 });
