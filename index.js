@@ -329,9 +329,9 @@ app.get('/app', (req, res) => {
         h1 {
           font-size: 1.7rem;
           font-weight: 800;
-          color: #1e3a8a; /* ✅ Deep royal blue */
+          color: #1e3a8a; /* Deep royal blue */
           letter-spacing: -0.4px;
-          text-shadow: 0 2px 3px rgba(0,0,0,0.3); /* ✅ 3D effect */
+          text-shadow: 0 2px 3px rgba(0,0,0,0.3); /* 3D effect */
         }
         .subtitle {
           color: #fff;
@@ -456,12 +456,12 @@ app.get('/app', (req, res) => {
     <body>
       <div class="container">
         <header>
-          <h1>Dashboard</h1> <!-- ✅ Changed from "KS1 Empower Pay" -->
+          <h1>Dashboard</h1>
           <p class="subtitle">Non-custodial • Alkebulan (AFRICA)-first • Nonprofit-powered</p>
         </header>
 
         <div class="card">
-          <h2>Create Payment</h2>
+          <h2>Create Mobile Money Payment</h2>
           <input type="text" id="business-name" placeholder="Business Name (e.g. Kwame Store)" />
           <input type="number" id="amount" placeholder="Amount in GHS" min="1" value="100"/>
           <input type="text" id="phone" placeholder="Customer MoMo number (e.g. +233...)" value="+233240000000"/>
