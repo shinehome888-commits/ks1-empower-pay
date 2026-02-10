@@ -1,4 +1,4 @@
-// KS1 EMPOWER PAY – ALKEBULAN (AFRICA) EDITION • MERCHANT REGISTRATION
+// KS1 EMPOWER PAY – ALKEBULAN (AFRICA) EDITION • FINAL BRAND
 // Non-custodial • Alkebulan (AFRICA)-first • Nonprofit-powered
 
 const express = require('express');
@@ -55,28 +55,14 @@ async function initDB() {
   }
 }
 
-// === MOCK REGISTRATION & LOGIN ===
+// === REGISTRATION (NO WHATSAPP CODE) ===
 app.post('/api/register', async (req, res) => {
   const { whatsapp, password } = req.body;
   if (!whatsapp || !password || !whatsapp.startsWith('+233') || password.length < 4) {
     return res.status(400).json({ error: 'Invalid input' });
   }
 
-  // In real version: send 4-digit code via WhatsApp
-  const mockCode = Math.floor(1000 + Math.random() * 9000).toString();
-  console.log(`📱 Mock WhatsApp code for ${whatsapp}: ${mockCode}`);
-
-  res.json({ success: true, message: 'Verification code sent to WhatsApp', mockCode });
-});
-
-app.post('/api/verify', async (req, res) => {
-  const { whatsapp, password, code, mockCode } = req.body;
-  if (code !== mockCode) {
-    return res.status(400).json({ error: 'Invalid verification code' });
-  }
-
-  // Hash password (in real app: use bcrypt)
-  const passwordHash = password;
+  const passwordHash = password; // ⚠️ In production: use bcrypt
 
   try {
     const id = 'm_' + Date.now();
@@ -91,6 +77,7 @@ app.post('/api/verify', async (req, res) => {
   }
 });
 
+// === LOGIN ===
 app.post('/api/login', async (req, res) => {
   const { whatsapp, password } = req.body;
   if (!whatsapp || !password) {
@@ -160,7 +147,7 @@ app.get('/api/commissions', async (req, res) => {
   }
 });
 
-// === LANDING PAGE WITH REGISTRATION & LOGIN ===
+// === LANDING PAGE ===
 app.get('/', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -182,12 +169,12 @@ app.get('/', (req, res) => {
           min-height: 100vh;
           display: flex;
           flex-direction: column;
+          justify-content: center;
         }
         .container {
           background: rgba(10, 10, 15, 0.95);
           border-radius: 24px;
           padding: 2.2rem;
-          margin-top: 1.5rem;
           margin-bottom: 2rem;
           box-shadow: 
             0 0 25px rgba(255, 215, 0, 0.25),
@@ -314,6 +301,7 @@ app.get('/', (req, res) => {
           color: #aaa;
           font-size: 0.8rem;
           margin-top: 0.5rem;
+          font-style: italic;
         }
       </style>
     </head>
@@ -336,9 +324,6 @@ app.get('/', (req, res) => {
             <input type="password" id="reg-password" placeholder="Create Password (min 4 chars)" />
             <button class="password-toggle" onclick="togglePassword('reg-password')">👁️</button>
           </div>
-          <div class="form-group">
-            <input type="text" id="reg-code" placeholder="4-Digit Code from WhatsApp" />
-          </div>
           <button class="btn" onclick="register()">Create Account</button>
           <div id="reg-error" class="error"></div>
         </div>
@@ -358,13 +343,11 @@ app.get('/', (req, res) => {
       </div>
 
       <div class="footer">
-        © 2026 ShineGPT - A nonprofit project by KS1 Empire Group & Foundation (KS1EGF)<br/>
-        <span class="trademark">Built with love for every curious mind</span>
+        © 2026 ShineGPT – A nonprofit project by KS1 Empire Group & Foundation (KS1EGF)<br/>
+        <span class="trademark">Built for Alkebulan (Africa) SMEs, Businesses And Entrepreneurs — united in digital sovereignty and shared prosperity.</span>
       </div>
 
       <script>
-        let currentMockCode = '';
-
         function togglePassword(id) {
           const input = document.getElementById(id);
           const btn = input.nextElementSibling;
@@ -387,9 +370,8 @@ app.get('/', (req, res) => {
         async function register() {
           const whatsapp = document.getElementById('reg-whatsapp').value.trim();
           const password = document.getElementById('reg-password').value;
-          const code = document.getElementById('reg-code').value;
 
-          if (!whatsapp || !password || !code) {
+          if (!whatsapp || !password) {
             document.getElementById('reg-error').textContent = 'Please fill all fields';
             return;
           }
@@ -402,42 +384,18 @@ app.get('/', (req, res) => {
             return;
           }
 
-          // Step 1: Request code (in real app: sends via WhatsApp)
-          if (!currentMockCode) {
-            const res = await fetch('/api/register', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ whatsapp, password })
-            });
-            const data = await res.json();
-            if (data.success) {
-              currentMockCode = data.mockCode;
-              alert('🔐 Mock verification code: ' + currentMockCode + '\\n(In real version, this would be sent to your WhatsApp)');
-              document.getElementById('reg-error').textContent = 'Code sent! Enter it above.';
-            } else {
-              document.getElementById('reg-error').textContent = data.error || 'Failed to send code';
-            }
-            return;
-          }
-
-          // Step 2: Verify code
-          if (code !== currentMockCode) {
-            document.getElementById('reg-error').textContent = 'Invalid verification code';
-            return;
-          }
-
-          const verifyRes = await fetch('/api/verify', {
+          const res = await fetch('/api/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ whatsapp, password, code, mockCode: currentMockCode })
+            body: JSON.stringify({ whatsapp, password })
           });
-          const verifyData = await verifyRes.json();
-          if (verifyData.success) {
+          const data = await res.json();
+          if (data.success) {
             localStorage.setItem('ks1_auth', 'true');
             localStorage.setItem('ks1_whatsapp', whatsapp);
             window.location.href = '/app';
           } else {
-            document.getElementById('reg-error').textContent = verifyData.error || 'Registration failed';
+            document.getElementById('reg-error').textContent = data.error || 'Registration failed';
           }
         }
 
@@ -611,6 +569,12 @@ app.get('/app', (req, res) => {
           padding-top: 1.8rem;
           border-top: 1px solid #222;
         }
+        .trademark {
+          color: #aaa;
+          font-size: 0.8rem;
+          margin-top: 0.5rem;
+          font-style: italic;
+        }
       </style>
     </head>
     <body>
@@ -630,8 +594,8 @@ app.get('/app', (req, res) => {
       </div>
 
       <div class="footer">
-        © 2026 ShineGPT - A nonprofit project by KS1 Empire Group & Foundation (KS1EGF)<br/>
-        Built with love for every curious mind
+        © 2026 ShineGPT – A nonprofit project by KS1 Empire Group & Foundation (KS1EGF)<br/>
+        <span class="trademark">Built for Alkebulan (Africa) SMEs, Businesses And Entrepreneurs — united in digital sovereignty and shared prosperity.</span>
       </div>
 
       <script>
