@@ -95,7 +95,7 @@ app.get('/api/commissions', async (req, res) => {
   }
 });
 
-// === LANDING PAGE WITH HARMONIZED TITLES ===
+// === LANDING PAGE WITH HARMONIZED TITLES & SUBTITLE ===
 app.get('/', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -133,20 +133,21 @@ app.get('/', (req, res) => {
         }
         h1 {
           font-size: 1.7rem;
-          font-weight: 900; /* ✅ Bolder */
-          color: #1e3a8a; /* ✅ Deep royal blue */
+          font-weight: 900;
+          color: #1e3a8a;
           text-align: center;
           margin-bottom: 1.2rem;
-          letter-spacing: -0.5px; /* ✅ Tighter */
-          text-shadow: 0 2px 4px rgba(255, 215, 0, 0.2); /* ✅ Gold glow */
+          letter-spacing: -0.5px;
+          text-shadow: 0 2px 4px rgba(255, 215, 0, 0.2);
         }
         .subtitle {
-          color: #FFD700;
-          font-size: 0.9rem;
+          color: #FFD700; /* ✅ Yellow gold */
+          font-size: 1.05rem; /* Slightly larger */
           text-align: center;
           margin-bottom: 1.4rem;
-          letter-spacing: 0.4px;
-          font-weight: 600;
+          letter-spacing: 0.5px;
+          font-weight: 800; /* Bolder */
+          text-shadow: 0 2px 3px rgba(0,0,0,0.3); /* Subtle depth */
         }
         .form-group {
           margin-bottom: 0.9rem;
@@ -237,13 +238,12 @@ app.get('/', (req, res) => {
           background: rgba(15, 15, 25, 0.8);
           border-radius: 16px;
           border: 1px solid rgba(255, 215, 0, 0.15);
-          /* Yellow gold glow */
           box-shadow: 
             0 0 12px rgba(255, 215, 0, 0.15),
             inset 0 0 8px rgba(255, 215, 0, 0.08);
         }
         .values-section h3 {
-          color: #1e3a8a; /* Deep royal blue */
+          color: #1e3a8a;
           text-align: center;
           margin-bottom: 1.4rem;
           font-weight: 900;
@@ -251,14 +251,14 @@ app.get('/', (req, res) => {
           text-shadow: 0 2px 4px rgba(255, 215, 0, 0.2);
         }
         .value-card {
-          background: rgba(30, 58, 138, 0.2); /* Uniform deep blue */
+          background: rgba(30, 58, 138, 0.2);
           padding: 1rem;
           border-radius: 12px;
           margin-bottom: 1.2rem;
-          border-left: 3px solid #FFD700; /* Gold accent */
+          border-left: 3px solid #FFD700;
         }
         .value-card strong {
-          color: #FFD700; /* Yellow gold */
+          color: #FFD700;
           display: block;
           margin-bottom: 0.5rem;
           font-size: 0.98rem;
@@ -275,7 +275,7 @@ app.get('/', (req, res) => {
     <body>
       <div class="login-card">
         <h1>KS1 Empower Pay</h1>
-        <p class="subtitle">Secure Access for Authorized Merchants</p>
+        <p class="subtitle">Secure Access For Authorized Merchants</p>
 
         <div class="form-group">
           <input type="password" id="password" placeholder="Enter Business Password" autocomplete="off" />
@@ -342,7 +342,7 @@ app.get('/', (req, res) => {
   `);
 });
 
-// === MAIN APP (DASHBOARD) WITH HARMONIZED TITLE ===
+// === MAIN APP (DASHBOARD) WITH HARMONIZED TITLE & HEADER ===
 app.get('/app', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -386,10 +386,10 @@ app.get('/app', (req, res) => {
         }
         h1 {
           font-size: 1.7rem;
-          font-weight: 900; /* ✅ Bolder */
-          color: #1e3a8a; /* ✅ Deep royal blue */
-          letter-spacing: -0.5px; /* ✅ Tighter */
-          text-shadow: 0 2px 4px rgba(255, 215, 0, 0.2); /* ✅ Gold glow */
+          font-weight: 900;
+          color: #1e3a8a;
+          letter-spacing: -0.5px;
+          text-shadow: 0 2px 4px rgba(255, 215, 0, 0.2);
           text-align: center;
           margin-bottom: 1.2rem;
         }
@@ -411,10 +411,11 @@ app.get('/app', (req, res) => {
           border: 1px solid rgba(255, 215, 0, 0.07);
         }
         .card h2 {
-          color: #FFD700;
-          font-size: 1.15rem;
-          margin-bottom: 0.8rem;
-          font-weight: 700;
+          color: #FFD700; /* ✅ Yellow gold */
+          font-size: 1.2rem; /* Slightly larger */
+          margin-bottom: 0.9rem;
+          font-weight: 800; /* Bolder */
+          text-shadow: 0 2px 3px rgba(0,0,0,0.3); /* Subtle depth */
         }
         .card input[type="text"]:nth-of-type(1),
         .card input[type="text"]:nth-of-type(2),
