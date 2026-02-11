@@ -95,7 +95,7 @@ app.get('/api/commissions', async (req, res) => {
   }
 });
 
-// === LANDING PAGE WITH HARMONIZED MISSION SECTION ===
+// === LANDING PAGE WITH HARMONIZED TITLES ===
 app.get('/', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -133,12 +133,12 @@ app.get('/', (req, res) => {
         }
         h1 {
           font-size: 1.7rem;
-          font-weight: 800;
-          color: #1e3a8a;
+          font-weight: 900; /* ✅ Bolder */
+          color: #1e3a8a; /* ✅ Deep royal blue */
           text-align: center;
           margin-bottom: 1.2rem;
-          letter-spacing: -0.4px;
-          text-shadow: 0 2px 3px rgba(0,0,0,0.3);
+          letter-spacing: -0.5px; /* ✅ Tighter */
+          text-shadow: 0 2px 4px rgba(255, 215, 0, 0.2); /* ✅ Gold glow */
         }
         .subtitle {
           color: #FFD700;
@@ -342,7 +342,7 @@ app.get('/', (req, res) => {
   `);
 });
 
-// === MAIN APP (DASHBOARD) ===
+// === MAIN APP (DASHBOARD) WITH HARMONIZED TITLE ===
 app.get('/app', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -386,10 +386,12 @@ app.get('/app', (req, res) => {
         }
         h1 {
           font-size: 1.7rem;
-          font-weight: 800;
-          color: #1e3a8a; /* Deep royal blue */
-          letter-spacing: -0.4px;
-          text-shadow: 0 2px 3px rgba(0,0,0,0.3); /* 3D effect */
+          font-weight: 900; /* ✅ Bolder */
+          color: #1e3a8a; /* ✅ Deep royal blue */
+          letter-spacing: -0.5px; /* ✅ Tighter */
+          text-shadow: 0 2px 4px rgba(255, 215, 0, 0.2); /* ✅ Gold glow */
+          text-align: center;
+          margin-bottom: 1.2rem;
         }
         .subtitle {
           color: #fff;
