@@ -95,7 +95,7 @@ app.get('/api/commissions', async (req, res) => {
   }
 });
 
-// === LANDING PAGE WITH MISSION / VISION / WHO WE ARE ===
+// === LANDING PAGE WITH HARMONIZED MISSION SECTION ===
 app.get('/', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -230,50 +230,46 @@ app.get('/', (req, res) => {
           line-height: 1.4;
         }
 
-        /* Mission/Vision/Who We Are */
+        /* ✅ HARMONIZED VALUES SECTION */
         .values-section {
           margin-top: 2rem;
           padding: 1.5rem;
-          background: rgba(15, 15, 25, 0.7);
+          background: rgba(15, 15, 25, 0.8);
           border-radius: 16px;
-          border: 1px solid rgba(255, 215, 0, 0.1);
+          border: 1px solid rgba(255, 215, 0, 0.15);
+          /* Yellow gold glow */
+          box-shadow: 
+            0 0 12px rgba(255, 215, 0, 0.15),
+            inset 0 0 8px rgba(255, 215, 0, 0.08);
         }
         .values-section h3 {
-          color: #FFD700;
+          color: #1e3a8a; /* Deep royal blue */
           text-align: center;
-          margin-bottom: 1.2rem;
-          font-weight: 800;
+          margin-bottom: 1.4rem;
+          font-weight: 900;
+          letter-spacing: -0.5px;
+          text-shadow: 0 2px 4px rgba(255, 215, 0, 0.2);
         }
         .value-card {
-          background: rgba(30, 58, 138, 0.2);
+          background: rgba(30, 58, 138, 0.2); /* Uniform deep blue */
           padding: 1rem;
           border-radius: 12px;
           margin-bottom: 1.2rem;
-          border-left: 3px solid #3b82f6;
-        }
-        .value-card.vision {
-          background: rgba(234, 179, 8, 0.15);
-          border-left-color: #FFD700;
-        }
-        .value-card.who {
-          background: rgba(139, 92, 246, 0.2);
-          border-left-color: #c084fc;
+          border-left: 3px solid #FFD700; /* Gold accent */
         }
         .value-card strong {
+          color: #FFD700; /* Yellow gold */
           display: block;
-          margin-bottom: 0.4rem;
-          font-size: 0.95rem;
+          margin-bottom: 0.5rem;
+          font-size: 0.98rem;
+          font-weight: 700;
+          letter-spacing: 0.5px;
         }
-        .value-card.mission strong { color: #60a5fa; }
-        .value-card.vision strong { color: #fbbf24; }
-        .value-card.who strong { color: #d8b4fe; }
         .value-card p {
           font-size: 0.92rem;
-          line-height: 1.5;
+          color: #dbeafe;
+          line-height: 1.55;
         }
-        .value-card.mission p { color: #e2e8f0; }
-        .value-card.vision p { color: #fef3c7; }
-        .value-card.who p { color: #f3e8ff; }
       </style>
     </head>
     <body>
@@ -289,18 +285,18 @@ app.get('/', (req, res) => {
         <div id="error" class="error"></div>
       </div>
 
-      <!-- MISSION / VISION / WHO WE ARE -->
+      <!-- ✅ HARMONIZED MISSION / VISION / WHO WE ARE -->
       <div class="values-section">
         <h3>Our Heartbeat</h3>
-        <div class="value-card mission">
+        <div class="value-card">
           <strong>MISSION</strong>
           <p>To restore digital freedom for African SMEs, informal traders, and nonprofits by building open, non-custodial payment infrastructure that puts power back in the hands of the people — not platforms.</p>
         </div>
-        <div class="value-card vision">
+        <div class="value-card">
           <strong>VISION</strong>
           <p>An Alkebulan (AFRICA) where every street vendor, artisan, and community enterprise thrives in a digital economy they own, shape, and trust.</p>
         </div>
-        <div class="value-card who">
+        <div class="value-card">
           <strong>WHO WE ARE</strong>
           <p>We are builders, dreamers, and stewards of a more just digital world — united under the banner of KS1 Empire Group & Foundation (KS1EGF). We are not a corporation. We are a nonprofit-powered collective who believe: “This is for the people.”</p>
         </div>
