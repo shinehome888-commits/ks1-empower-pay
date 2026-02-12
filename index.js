@@ -1,4 +1,4 @@
-// KS1 EMPOWER PAY – ALKEBULAN (AFRICA) EDITION • CLEAN DUAL RECEIPT
+// KS1 EMPOWER PAY – ALKEBULAN (AFRICA) EDITION • PERSONALIZED DUAL RECEIPT
 // Non-custodial • Alkebulan (AFRICA)-first • Nonprofit-powered
 
 const express = require('express');
@@ -342,7 +342,7 @@ app.get('/', (req, res) => {
   `);
 });
 
-// === MAIN APP (DASHBOARD) WITH CLEAN BUSINESS RECEIPT ===
+// === MAIN APP (DASHBOARD) WITH PERSONALIZED RECEIPTS ===
 app.get('/app', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -569,8 +569,8 @@ app.get('/app', (req, res) => {
         resetTimer();
 
         async function requestMomo() {
-          const businessName = document.getElementById('business-name').value.trim() || '—';
-          const customerName = document.getElementById('customer-name').value.trim() || '—';
+          const businessName = document.getElementById('business-name').value.trim() || 'Valued Merchant';
+          const customerName = document.getElementById('customer-name').value.trim() || 'Valued Customer';
           const customerNumber = document.getElementById('customer-number').value.trim() || '—';
           const businessPhone = document.getElementById('business-phone').value.trim() || '—';
           const network = document.getElementById('network').value;
@@ -595,13 +595,13 @@ app.get('/app', (req, res) => {
             });
             const data = await res.json();
             if (data.success) {
-              // ✅ BUSINESS RECEIPT (NO BUSINESS PHONE)
+              // ✅ BUSINESS RECEIPT (with personalized thank you)
               const businessReceiptText = 
                 \`KS1 EMPOWER PAY\\n\` +
                 \`────────────────────\\n\` +
                 \`Business Name: \${businessName}\\n\` +
                 \`Customer Name: \${customerName}\\n\` +
-                \`Customer Number: \${customerNumber}\\n\` + // ✅ Only customer number
+                \`Customer Number: \${customerNumber}\\n\` +
                 \`Network: \${network}\\n\\n\` +
                 \`📄 TRANSACTION RECEIPT\\n\\n\` +
                 \`Gross Amount: GHS \${data.amount}\\n\` +
@@ -609,9 +609,10 @@ app.get('/app', (req, res) => {
                 \`You Receive: GHS \${(data.amount * 0.997).toFixed(2)}\\n\` +
                 \`Status: Completed\\n\` +
                 \`Timestamp: \${new Date().toLocaleString()}\\n\\n\` +
+                \`Thank You \${businessName}\\n\` + // ✅ Personalized
                 \`You just empowered Alkebulan (AFRICA) digital freedom!\`;
 
-              // ✅ CUSTOMER RECEIPT (WITH BUSINESS PHONE)
+              // ✅ CUSTOMER RECEIPT (with personalized thank you)
               const customerReceiptText = 
                 \`📄 PAYMENT CONFIRMED\\n\\n\` +
                 \`Paid to: \${businessName}\\n\` +
@@ -619,7 +620,7 @@ app.get('/app', (req, res) => {
                 \`Business Contact: \${businessPhone}\\n\` +
                 \`Status: Completed\\n\` +
                 \`Date: \${new Date().toLocaleDateString()}, \${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}\\n\\n\` +
-                \`Thank you for your purchase!\\n\` +
+                \`Thank You \${customerName}\\n\` + // ✅ Personalized
                 \`— KS1 Empower Pay\`;
 
               const businessUrl = \`https://wa.me/?text=\${encodeURIComponent(businessReceiptText)}\`;
@@ -650,6 +651,7 @@ app.get('/app', (req, res) => {
                   '</a>' +
                 '</div>' +
                 '<br/><br/>' +
+                '<strong>Thank You ' + businessName + '</strong><br/>' +
                 'You just empowered Alkebulan (AFRICA) digital freedom!';
 
               r.innerHTML = '<strong>🎉 Payment Completed!</strong><br/>' + receiptHtml;
