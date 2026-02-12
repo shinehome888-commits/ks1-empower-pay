@@ -1,4 +1,4 @@
-// KS1 EMPOWER PAY – ALKEBULAN (AFRICA) EDITION • FINAL BRAND
+// KS1 EMPOWER PAY – ALKEBULAN (AFRICA) EDITION • CLEAN DUAL RECEIPT
 // Non-custodial • Alkebulan (AFRICA)-first • Nonprofit-powered
 
 const express = require('express');
@@ -95,7 +95,7 @@ app.get('/api/commissions', async (req, res) => {
   }
 });
 
-// === LANDING PAGE WITH HARMONIZED TITLES & SUBTITLE ===
+// === LANDING PAGE ===
 app.get('/', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -141,13 +141,13 @@ app.get('/', (req, res) => {
           text-shadow: 0 2px 4px rgba(255, 215, 0, 0.2);
         }
         .subtitle {
-          color: #FFD700; /* ✅ Yellow gold */
-          font-size: 1.05rem; /* Slightly larger */
+          color: #FFD700;
+          font-size: 1.05rem;
           text-align: center;
           margin-bottom: 1.4rem;
           letter-spacing: 0.5px;
-          font-weight: 800; /* Bolder */
-          text-shadow: 0 2px 3px rgba(0,0,0,0.3); /* Subtle depth */
+          font-weight: 800;
+          text-shadow: 0 2px 3px rgba(0,0,0,0.3);
         }
         .form-group {
           margin-bottom: 0.9rem;
@@ -342,7 +342,7 @@ app.get('/', (req, res) => {
   `);
 });
 
-// === MAIN APP (DASHBOARD) WITH HARMONIZED TITLE & HEADER ===
+// === MAIN APP (DASHBOARD) WITH CLEAN BUSINESS RECEIPT ===
 app.get('/app', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -411,11 +411,11 @@ app.get('/app', (req, res) => {
           border: 1px solid rgba(255, 215, 0, 0.07);
         }
         .card h2 {
-          color: #FFD700; /* ✅ Yellow gold */
-          font-size: 1.2rem; /* Slightly larger */
+          color: #FFD700;
+          font-size: 1.2rem;
           margin-bottom: 0.9rem;
-          font-weight: 800; /* Bolder */
-          text-shadow: 0 2px 3px rgba(0,0,0,0.3); /* Subtle depth */
+          font-weight: 800;
+          text-shadow: 0 2px 3px rgba(0,0,0,0.3);
         }
         .card input[type="text"]:nth-of-type(1),
         .card input[type="text"]:nth-of-type(2),
@@ -496,6 +496,10 @@ app.get('/app', (req, res) => {
           font-size: 0.85rem;
           box-shadow: 0 3px 0 #B8860B, 0 5px 9px rgba(0,0,0,0.3);
           margin-top: 0.5rem;
+          margin-right: 0.4rem;
+        }
+        .whatsapp-btn:last-child {
+          margin-right: 0;
         }
         .whatsapp-btn:hover {
           background: linear-gradient(135deg, #FFE04D, #E6C24A);
@@ -591,13 +595,13 @@ app.get('/app', (req, res) => {
             });
             const data = await res.json();
             if (data.success) {
-              const receiptText = 
+              // ✅ BUSINESS RECEIPT (NO BUSINESS PHONE)
+              const businessReceiptText = 
                 \`KS1 EMPOWER PAY\\n\` +
                 \`────────────────────\\n\` +
                 \`Business Name: \${businessName}\\n\` +
                 \`Customer Name: \${customerName}\\n\` +
-                \`Customer Number: \${customerNumber}\\n\` +
-                \`Business Phone: \${businessPhone}\\n\` +
+                \`Customer Number: \${customerNumber}\\n\` + // ✅ Only customer number
                 \`Network: \${network}\\n\\n\` +
                 \`📄 TRANSACTION RECEIPT\\n\\n\` +
                 \`Gross Amount: GHS \${data.amount}\\n\` +
@@ -607,8 +611,19 @@ app.get('/app', (req, res) => {
                 \`Timestamp: \${new Date().toLocaleString()}\\n\\n\` +
                 \`You just empowered Alkebulan (AFRICA) digital freedom!\`;
 
-              const encodedText = encodeURIComponent(receiptText);
-              const whatsappUrl = \`https://wa.me/?text=\${encodedText}\`;
+              // ✅ CUSTOMER RECEIPT (WITH BUSINESS PHONE)
+              const customerReceiptText = 
+                \`📄 PAYMENT CONFIRMED\\n\\n\` +
+                \`Paid to: \${businessName}\\n\` +
+                \`Amount: GHS \${data.amount}\\n\` +
+                \`Business Contact: \${businessPhone}\\n\` +
+                \`Status: Completed\\n\` +
+                \`Date: \${new Date().toLocaleDateString()}, \${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}\\n\\n\` +
+                \`Thank you for your purchase!\\n\` +
+                \`— KS1 Empower Pay\`;
+
+              const businessUrl = \`https://wa.me/?text=\${encodeURIComponent(businessReceiptText)}\`;
+              const customerUrl = \`https://wa.me/?text=\${encodeURIComponent(customerReceiptText)}\`;
 
               const receiptHtml = 
                 '<div style="font-family: monospace; font-size: 0.89rem; line-height: 1.5;">' +
@@ -617,7 +632,6 @@ app.get('/app', (req, res) => {
                   '<strong>Business Name:</strong> ' + businessName + '<br/>' +
                   '<strong>Customer Name:</strong> ' + customerName + '<br/>' +
                   '<strong>Customer Number:</strong> ' + customerNumber + '<br/>' +
-                  '<strong>Business Phone:</strong> ' + businessPhone + '<br/>' +
                   '<strong>Network:</strong> ' + network + '<br/><br/>' +
                   '<strong>📄 TRANSACTION RECEIPT</strong><br/><br/>' +
                   'Gross Amount: GHS ' + data.amount + '<br/>' +
@@ -627,9 +641,14 @@ app.get('/app', (req, res) => {
                   'Timestamp: ' + new Date().toLocaleString() +
                 '</div>' +
                 '<br/>' +
-                '<a href="' + whatsappUrl + '" target="_blank" class="whatsapp-btn">' +
-                '📱 Share to WhatsApp' +
-                '</a>' +
+                '<div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">' +
+                  '<a href="' + businessUrl + '" target="_blank" class="whatsapp-btn">' +
+                  '📱 Share Business Receipt' +
+                  '</a>' +
+                  '<a href="' + customerUrl + '" target="_blank" class="whatsapp-btn">' +
+                  '📱 Share Customer Receipt' +
+                  '</a>' +
+                '</div>' +
                 '<br/><br/>' +
                 'You just empowered Alkebulan (AFRICA) digital freedom!';
 
