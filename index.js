@@ -1,4 +1,4 @@
-// KS1 EMPOWER PAY – INTERNATIONAL NONPROFIT EDITION • FUTURISTIC UI
+// KS1 EMPOWER PAY – ALKEBULAN (AFRICA) EDITION • BUSINESS REGISTRATION + ENHANCED UI
 const express = require('express');
 const { MongoClient, ObjectId } = require('mongodb');
 const dns = require('dns');
@@ -8,9 +8,7 @@ dns.setDefaultResultOrder('ipv4first');
 const app = express();
 app.use(express.json());
 
-const BUSINESS_PASSWORD = process.env.BUSINESS_PASSWORD || "ks1empower2026";
 const MONGODB_URI = process.env.MONGODB_URI;
-
 if (!MONGODB_URI) {
   console.error("❌ FATAL: MONGODB_URI not set");
   process.exit(1);
@@ -34,119 +32,63 @@ async function initDB() {
   }
 }
 
-// === HEALTH CHECK ===
-app.get('/api/test', (req, res) => {
-  res.json({ status: '✅ LIVE', nonprofit: 'KS1 Empire Group & Foundation' });
-});
+// === GENERATE TRANSACTION ID ===
+function generateTransactionId() {
+  return `KS1-${Math.floor(100 + Math.random() * 900)}-${Math.floor(100 + Math.random() * 900)}`;
+}
 
-// === SAVE MERCHANT PROFILE ===
-app.post('/api/profile', async (req, res) => {
+// === REGISTER BUSINESS ===
+app.post('/api/register', async (req, res) => {
   const { 
     businessName,
+    ownerName,
+    ownerDob, // YYYY-MM-DD
+    businessSince,
     businessPhone,
-    category = 'Other',
-    location = '—',
-    since = new Date().getFullYear(),
-    contactPreference = 'whatsapp',
-    optedIntoPromos = false
+    network = 'MTN'
   } = req.body;
 
-  if (!businessName || !businessPhone) {
-    return res.status(400).json({ error: 'Business name and phone required' });
+  if (!businessName || !ownerName || !ownerDob || !businessSince || !businessPhone) {
+    return res.status(400).json({ error: 'All fields required' });
   }
 
   try {
-    await db.collection('merchants').updateOne(
-      { businessPhone },
-      {
-        $set: {
-          businessName,
-          businessPhone,
-          category,
-          location,
-          since: parseInt(since),
-          contactPreference,
-          optedIntoPromos,
-          active: true,
-          updatedAt: new Date()
-        }
-      },
-      { upsert: true }
-    );
-    res.json({ success: true });
-  } catch (err) {
-    console.error("Profile save error:", err.message);
-    res.status(500).json({ error: 'Failed to save profile' });
-  }
-});
-
-// === GET ALL MERCHANTS ===
-app.get('/api/merchants', async (req, res) => {
-  const { password } = req.query;
-  if (!password || password !== BUSINESS_PASSWORD) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
-  try {
-    const merchants = await db.collection('merchants')
-      .find({ active: true })
-      .sort({ businessName: 1 })
-      .toArray();
-    res.json(merchants);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch merchants' });
-  }
-});
-
-// === FLAG DISPUTE ===
-app.post('/api/dispute', async (req, res) => {
-  const { password, transactionId, notes = '' } = req.body;
-  
-  if (!password || password !== BUSINESS_PASSWORD) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-  
-  if (!transactionId) {
-    return res.status(400).json({ error: 'Transaction ID required' });
-  }
-
-  try {
-    const result = await db.collection('transactions').updateOne(
-      { _id: new ObjectId(transactionId) },
-      { 
-        $set: { 
-          disputeFlag: true,
-          resolved: false,
-          notes,
-          updatedAt: new Date()
-        } 
-      }
-    );
-
-    if (result.matchedCount === 0) {
-      return res.status(404).json({ error: 'Transaction not found' });
+    const existing = await db.collection('merchants').findOne({ businessPhone });
+    if (existing) {
+      return res.status(409).json({ error: 'Business already registered' });
     }
 
-    res.json({ success: true });
+    const merchant = {
+      businessName,
+      ownerName,
+      ownerDob: new Date(ownerDob),
+      businessSince: parseInt(businessSince),
+      businessPhone,
+      network,
+      totalTransactions: 0,
+      totalVolume: 0,
+      active: true,
+      createdAt: new Date()
+    };
+
+    await db.collection('merchants').insertOne(merchant);
+    res.json({ success: true, message: "Business registered" });
   } catch (err) {
-    console.error("Dispute error:", err.message);
-    res.status(500).json({ error: 'Failed to flag dispute' });
+    console.error("Register error:", err.message);
+    res.status(500).json({ error: 'Failed to register' });
   }
 });
 
 // === CREATE TRANSACTION ===
 app.post('/api/momo/request', async (req, res) => {
   const { 
-    amount = 100, 
-    customerPhone,
-    businessName = '—',
+    businessPhone,
     customerName = '—',
     customerNumber = '—',
-    businessPhone = '—',
-    network = 'MTN'
+    amount = 100
   } = req.body;
 
-  if (!customerPhone || typeof amount !== 'number' || amount <= 0) {
+  if (!businessPhone || typeof amount !== 'number' || amount <= 0) {
     return res.status(400).json({ error: 'Invalid input' });
   }
 
@@ -155,57 +97,76 @@ app.post('/api/momo/request', async (req, res) => {
   const netToMerchant = parseFloat((amount - commission).toFixed(2));
 
   const transaction = {
-    businessName,
+    transactionId: generateTransactionId(),
+    businessPhone,
     customerName,
     customerNumber,
-    businessPhone,
-    network,
     amount: parseFloat(amount),
     commission,
     netToMerchant,
     status: 'completed',
     timestamp: new Date(),
-    paymentMethod: 'momo',
-    businessCategory: req.body.category || 'Other',
-    businessLocation: req.body.location || '—',
-    businessSince: req.body.since ? parseInt(req.body.since) : new Date().getFullYear(),
-    contactPreference: req.body.contactPreference || 'whatsapp',
-    optedIntoPromos: req.body.optedIntoPromos || false,
-    disputeFlag: false,
-    resolved: false,
-    notes: '',
-    updatedAt: new Date()
+    paymentMethod: 'momo'
   };
 
   try {
     await db.collection('transactions').insertOne(transaction);
-    res.json({ success: true });
+    res.json({ success: true, transactionId: transaction.transactionId });
   } catch (err) {
     console.error("Save error:", err.message);
     res.status(500).json({ error: 'Failed to save transaction' });
   }
 });
 
-// === GET TRANSACTIONS ===
-app.get('/api/transactions', async (req, res) => {
+// === GET MERCHANT BY PHONE ===
+app.get('/api/merchant/:phone', async (req, res) => {
+  try {
+    const merchant = await db.collection('merchants').findOne({ businessPhone: req.params.phone });
+    if (!merchant) return res.status(404).json({ error: 'Business not found' });
+    res.json(merchant);
+  } catch (err) {
+    res.status(500).json({ error: 'Fetch failed' });
+  }
+});
+
+// === GET TRANSACTIONS FOR MERCHANT ===
+app.get('/api/transactions/:phone', async (req, res) => {
+  try {
+    const txs = await db.collection('transactions')
+      .find({ businessPhone: req.params.phone })
+      .sort({ timestamp: -1 })
+      .toArray();
+    res.json(txs);
+  } catch (err) {
+    res.status(500).json({ error: 'Fetch failed' });
+  }
+});
+
+// === ADMIN: GET ALL TRANSACTIONS ===
+app.get('/api/admin/transactions', async (req, res) => {
   const { password } = req.query;
-  if (!password || password !== BUSINESS_PASSWORD) {
+  if (password !== process.env.BUSINESS_PASSWORD) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
   try {
-    const transactions = await db.collection('transactions')
+    const txs = await db.collection('transactions')
       .find()
       .sort({ timestamp: -1 })
       .toArray();
-    res.json(transactions);
+    res.json(txs);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch transactions' });
+    res.status(500).json({ error: 'Fetch failed' });
   }
 });
 
-// === STATS API ===
-app.get('/api/stats', async (req, res) => {
+// === ADMIN: STATS ===
+app.get('/api/admin/stats', async (req, res) => {
+  const { password } = req.query;
+  if (password !== process.env.BUSINESS_PASSWORD) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
   try {
     const total = await db.collection('transactions').countDocuments();
     const result = await db.collection('transactions').aggregate([
@@ -220,7 +181,7 @@ app.get('/api/stats', async (req, res) => {
       totalCommission: parseFloat(totalCommission.toFixed(2))
     });
   } catch (err) {
-    res.status(500).json({ error: 'Stats unavailable' });
+    res.status(500).json({ error: 'Stats failed' });
   }
 });
 
@@ -237,8 +198,8 @@ app.get('/', (req, res) => {
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
           font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-          background: #fff;
-          color: #1e3a8a;
+          background: #0c1a3a;
+          color: #fff;
           line-height: 1.5;
           padding: 0 1rem;
           max-width: 460px;
@@ -249,23 +210,41 @@ app.get('/', (req, res) => {
           justify-content: center;
           padding-top: 2vh;
           padding-bottom: 2vh;
+          position: relative;
+          overflow: hidden;
+        }
+        body::before {
+          content: "";
+          position: absolute;
+          top: -50%;
+          left: -50%;
+          width: 200%;
+          height: 200%;
+          background: radial-gradient(circle, rgba(212, 175, 55, 0.3) 0%, transparent 70%);
+          z-index: -1;
+          animation: rotate 20s linear infinite;
+        }
+        @keyframes rotate {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
         }
         .login-card {
-          background: #fff;
+          background: rgba(12, 26, 58, 0.85);
           border-radius: 16px;
           padding: 1.8rem;
-          box-shadow: 0 8px 24px rgba(212, 175, 55, 0.15);
+          box-shadow: 0 8px 24px rgba(212, 175, 55, 0.25);
           width: 100%;
-          border: 1px solid #f0f0f0;
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(212, 175, 55, 0.3);
         }
         h1 {
-          font-size: 2.1rem;
+          font-size: 2.2rem;
           font-weight: 900;
-          color: #1e3a8a;
+          color: #FFD700;
           text-align: center;
           margin-bottom: 1.2rem;
           letter-spacing: -0.5px;
-          text-shadow: 2px 2px 4px rgba(212, 175, 55, 0.2);
+          text-shadow: 0 0 10px rgba(212, 175, 55, 0.7);
           position: relative;
         }
         h1::after {
@@ -280,35 +259,33 @@ app.get('/', (req, res) => {
           border-radius: 2px;
         }
         .subtitle {
-          color: #D4AF37;
+          color: #dbeafe;
           font-size: 1.1rem;
           text-align: center;
           margin-bottom: 1.6rem;
           font-weight: 700;
-          letter-spacing: 0.5px;
         }
         .form-group {
           margin-bottom: 1.1rem;
           position: relative;
         }
-        input {
+        input, select {
           width: 100%;
           padding: 0.85rem 1rem;
-          border: 1px solid #ddd;
+          border: 1px solid #444;
           border-radius: 10px;
-          background: #fff;
-          color: #333;
+          background: rgba(0,0,0,0.3);
+          color: #fff;
           font-size: 0.95rem;
-          transition: all 0.2s;
         }
-        input:focus {
+        input:focus, select:focus {
           border-color: #D4AF37;
-          box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
+          box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.3);
           outline: none;
         }
-        .btn-login {
+        .btn-register {
           background: linear-gradient(135deg, #D4AF37, #FFD700);
-          color: #1e3a8a;
+          color: #0c1a3a;
           font-weight: 800;
           text-transform: uppercase;
           letter-spacing: 0.6px;
@@ -320,24 +297,24 @@ app.get('/', (req, res) => {
           cursor: pointer;
           box-shadow: 
             0 4px 0 #B8860B,
-            0 6px 12px rgba(212, 175, 55, 0.3);
+            0 6px 12px rgba(212, 175, 55, 0.4);
           transition: all 0.15s ease;
         }
-        .btn-login:hover {
+        .btn-register:hover {
           background: linear-gradient(135deg, #E6C24A, #FFE04D);
           transform: translateY(2px);
           box-shadow: 
             0 2px 0 #B8860B,
-            0 4px 10px rgba(212, 175, 55, 0.25);
+            0 4px 10px rgba(212, 175, 55, 0.35);
         }
-        .btn-login:active {
+        .btn-register:active {
           transform: translateY(4px);
           box-shadow: 
             0 0 0 #B8860B,
-            0 2px 8px rgba(212, 175, 55, 0.2);
+            0 2px 8px rgba(212, 175, 55, 0.3);
         }
         .error {
-          color: #ef4444;
+          color: #f87171;
           text-align: center;
           margin-top: 0.8rem;
           font-size: 0.85rem;
@@ -345,15 +322,13 @@ app.get('/', (req, res) => {
         }
         .footer {
           text-align: center;
-          color: #666;
+          color: #94a3b8;
           font-size: 0.8rem;
           padding-top: 1.4rem;
           margin-top: auto;
-          border-top: 1px solid #eee;
-          padding-top: 1.2rem;
         }
         .trademark {
-          color: #555;
+          color: #cbd5e1;
           font-size: 0.75rem;
           margin-top: 0.5rem;
           font-style: italic;
@@ -364,12 +339,31 @@ app.get('/', (req, res) => {
     <body>
       <div class="login-card">
         <h1>KS1 Empower Pay</h1>
-        <p class="subtitle">Secure Access for Authorized Merchants</p>
+        <p class="subtitle">Register Your Business</p>
 
         <div class="form-group">
-          <input type="password" id="password" placeholder="Enter Business Password" autocomplete="off" />
+          <input type="text" id="bname" placeholder="Business Name" />
         </div>
-        <button class="btn-login" onclick="login()">Access Dashboard</button>
+        <div class="form-group">
+          <input type="text" id="oname" placeholder="Owner Full Name" />
+        </div>
+        <div class="form-group">
+          <input type="date" id="dob" placeholder="Owner Date of Birth" />
+        </div>
+        <div class="form-group">
+          <input type="number" id="since" placeholder="Year Business Started (e.g., 2020)" min="1900" max="2026" />
+        </div>
+        <div class="form-group">
+          <input type="text" id="phone" placeholder="Business Phone (+233...)" />
+        </div>
+        <div class="form-group">
+          <select id="net">
+            <option value="MTN">MTN</option>
+            <option value="Telecel">Telecel</option>
+            <option value="AirtelTogo">AirtelTogo</option>
+          </select>
+        </div>
+        <button class="btn-register" onclick="register()">Register Business</button>
         <div id="error" class="error"></div>
       </div>
 
@@ -379,20 +373,42 @@ app.get('/', (req, res) => {
       </div>
 
       <script>
-        async function login() {
-          const password = document.getElementById('password').value;
-          const errorEl = document.getElementById('error');
+        async function register() {
+          const data = {
+            businessName: document.getElementById('bname').value,
+            ownerName: document.getElementById('oname').value,
+            ownerDob: document.getElementById('dob').value,
+            businessSince: document.getElementById('since').value,
+            businessPhone: document.getElementById('phone').value,
+            network: document.getElementById('net').value
+          };
 
-          if (!password.trim()) {
-            errorEl.textContent = 'Please enter the business password';
+          const errorEl = document.getElementById('error');
+          if (!data.businessName || !data.ownerName || !data.ownerDob || !data.businessSince || !data.businessPhone) {
+            errorEl.textContent = 'Please fill all fields';
             return;
           }
 
-          if (password === '${BUSINESS_PASSWORD}') {
-            localStorage.setItem('ks1_auth', 'true');
-            window.location.href = '/app';
-          } else {
-            errorEl.textContent = 'Invalid business password';
+          if (!data.businessPhone.startsWith('+233')) {
+            errorEl.textContent = 'Phone must start with +233';
+            return;
+          }
+
+          try {
+            const res = await fetch('/api/register', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(data)
+            });
+            const d = await res.json();
+            if (d.success) {
+              localStorage.setItem('businessPhone', data.businessPhone);
+              window.location.href = '/app';
+            } else {
+              errorEl.textContent = d.error || 'Registration failed';
+            }
+          } catch (e) {
+            errorEl.textContent = 'Network error';
           }
         }
       </script>
@@ -401,7 +417,7 @@ app.get('/', (req, res) => {
   `);
 });
 
-// === DASHBOARD ===
+// === USER DASHBOARD ===
 app.get('/app', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -409,7 +425,7 @@ app.get('/app', (req, res) => {
     <head>
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-      <title>KS1 Empower Pay</title>
+      <title>Dashboard</title>
       <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -440,6 +456,7 @@ app.get('/app', (req, res) => {
           text-align: center;
           padding: 0.9rem 0;
           margin-bottom: 1.4rem;
+          position: relative;
         }
         h1 {
           font-size: 2.0rem;
@@ -481,6 +498,17 @@ app.get('/app', (req, res) => {
           font-size: 1.3rem;
           margin-bottom: 1.1rem;
           font-weight: 800;
+          position: relative;
+        }
+        .card h2::after {
+          content: "";
+          position: absolute;
+          bottom: -6px;
+          left: 0;
+          width: 40px;
+          height: 2px;
+          background: linear-gradient(90deg, #D4AF37, #FFD700);
+          border-radius: 1px;
         }
         input, select, button {
           width: 100%;
@@ -524,6 +552,14 @@ app.get('/app', (req, res) => {
             0 0 0 #B8860B,
             0 2px 8px rgba(212, 175, 55, 0.2);
         }
+        .btn-refresh {
+          background: #e0e7ff;
+          color: #4f46e5;
+          border: 1px solid #c7d2fe;
+          font-weight: 600;
+          padding: 0.6rem;
+          margin-top: 1rem;
+        }
         #result {
           margin-top: 1rem;
           padding: 1rem;
@@ -535,6 +571,14 @@ app.get('/app', (req, res) => {
           font-weight: 600;
           font-size: 0.92rem;
           line-height: 1.5;
+        }
+        .mission-note {
+          background: #eff6ff;
+          padding: 12px;
+          border-radius: 8px;
+          margin: 15px 0;
+          font-size: 14px;
+          color: #1e3a8a;
         }
         .footer {
           text-align: center;
@@ -559,22 +603,21 @@ app.get('/app', (req, res) => {
           <p class="subtitle">Non-custodial • Alkebulan (AFRICA)-first • Nonprofit-powered</p>
         </header>
 
+        <div class="mission-note">
+          💡 <strong>1% solidarity contribution</strong> supports our mission.<br/>
+          <strong>Please remind customers to include Mobile Money network charges</strong> when sending funds.
+        </div>
+
         <div class="card">
           <h2>Create Mobile Money Payment</h2>
-          <input type="text" id="bname" placeholder="Business Name (e.g. Kwame Store)" />
           <input type="text" id="cname" placeholder="Customer Name (e.g. Ama Serwaa)" />
           <input type="text" id="cnum" placeholder="Customer Number (e.g. +233240000000)" />
-          <input type="text" id="bphone" placeholder="Business Phone (e.g. +233240123456)" />
-          <select id="net">
-            <option value="MTN">MTN</option>
-            <option value="Telecel">Telecel</option>
-            <option value="AirtelTogo">AirtelTogo</option>
-          </select>
           <input type="number" id="amt" placeholder="Amount in GHS" min="1" value="100"/>
           <input type="text" id="cphone" placeholder="Customer MoMo number (e.g. +233...)" value="+233240000000"/>
           <button class="btn-momo" onclick="pay()">
             Pay & Empower Alkebulan (AFRICA)
           </button>
+          <button class="btn-refresh" onclick="loadTransactions()">🔄 Refresh Data</button>
           <div id="result"></div>
         </div>
       </div>
@@ -585,27 +628,17 @@ app.get('/app', (req, res) => {
       </div>
 
       <script>
-        let inactivityTimer;
-        function resetTimer() {
-          clearTimeout(inactivityTimer);
-          inactivityTimer = setTimeout(() => {
-            localStorage.removeItem('ks1_auth');
-            alert('Session expired for security.');
-            window.location.href = '/';
-          }, 30000);
+        let businessPhone = localStorage.getItem('businessPhone');
+        if (!businessPhone) {
+          alert('Please register first');
+          window.location.href = '/';
         }
-        ['click','touchstart','keypress','scroll'].forEach(e => {
-          document.addEventListener(e, resetTimer, true);
-        });
-        resetTimer();
 
         async function pay() {
           const data = {
-            businessName: document.getElementById('bname').value,
+            businessPhone,
             customerName: document.getElementById('cname').value,
             customerNumber: document.getElementById('cnum').value,
-            businessPhone: document.getElementById('bphone').value,
-            network: document.getElementById('net').value,
             amount: parseFloat(document.getElementById('amt').value),
             customerPhone: document.getElementById('cphone').value
           };
@@ -628,7 +661,7 @@ app.get('/app', (req, res) => {
             });
             const d = await res.json();
             if (d.success) {
-              r.innerHTML = '<strong>🎉 Payment Completed!</strong><br/>Check WhatsApp for receipts.';
+              r.innerHTML = '<strong>🎉 Payment Completed!</strong><br/>Transaction ID: <b>' + d.transactionId + '</b><br/>Check WhatsApp for receipts.';
             } else {
               r.innerHTML = '❌ Failed: ' + (d.error || 'Unknown');
             }
@@ -636,6 +669,18 @@ app.get('/app', (req, res) => {
             r.innerHTML = '❌ Network error';
           }
         }
+
+        async function loadTransactions() {
+          try {
+            const res = await fetch('/api/transactions/' + businessPhone);
+            const txs = await res.json();
+            console.log('Loaded', txs.length, 'transactions');
+          } catch (e) {
+            console.error('Refresh failed');
+          }
+        }
+
+        loadTransactions();
       </script>
     </body>
     </html>
@@ -742,6 +787,14 @@ app.get('/admin', (req, res) => {
           cursor: pointer;
           box-shadow: 0 3px 0 #B8860B;
         }
+        .btn-refresh {
+          background: #e0e7ff;
+          color: #4f46e5;
+          border: 1px solid #c7d2fe;
+          font-weight: 600;
+          padding: 0.6rem;
+          margin-left: 10px;
+        }
         table {
           width: 100%;
           border-collapse: collapse;
@@ -810,19 +863,19 @@ app.get('/admin', (req, res) => {
             <option value="Telecel">Telecel</option>
             <option value="AirtelTogo">AirtelTogo</option>
           </select>
-          <button class="btn-filter" onclick="loadTransactions()">Apply</button>
+          <button class="btn-filter" onclick="loadData()">Apply</button>
+          <button class="btn-refresh" onclick="loadData()">🔄 Refresh</button>
         </div>
 
         <table id="txTable">
           <thead>
             <tr>
+              <th>ID</th>
               <th>Date</th>
               <th>Business</th>
               <th>Customer</th>
-              <th>Network</th>
               <th>Amount (GHS)</th>
               <th>Commission (GHS)</th>
-              <th>Actions</th>
             </tr>
           </thead>
           <tbody id="txBody"></tbody>
@@ -836,88 +889,37 @@ app.get('/admin', (req, res) => {
       <script>
         let currentPassword = '';
 
-        async function loadStats() {
+        async function loadData() {
           try {
-            const res = await fetch('/api/stats');
-            const data = await res.json();
-            document.getElementById('totalTx').textContent = data.totalTransactions;
-            document.getElementById('totalVol').textContent = data.totalVolume.toFixed(2);
-            document.getElementById('totalComm').textContent = data.totalCommission.toFixed(2);
-          } catch (err) {
-            console.error("Stats load failed");
-          }
-        }
+            const statsRes = await fetch('/api/admin/stats?password=' + encodeURIComponent(currentPassword));
+            const stats = await statsRes.json();
+            document.getElementById('totalTx').textContent = stats.totalTransactions;
+            document.getElementById('totalVol').textContent = stats.totalVolume.toFixed(2);
+            document.getElementById('totalComm').textContent = stats.totalCommission.toFixed(2);
 
-        async function loadTransactions() {
-          try {
-            const search = document.getElementById('search').value;
-            const network = document.getElementById('networkFilter').value;
-            
-            const res = await fetch('/api/transactions?password=' + encodeURIComponent(currentPassword));
-            let txs = await res.json();
-            
-            if (search) {
-              const q = search.toLowerCase();
-              txs = txs.filter(tx => 
-                tx.businessName.toLowerCase().includes(q) ||
-                tx.customerName.toLowerCase().includes(q) ||
-                tx.customerNumber.includes(q) ||
-                tx.businessPhone.includes(q)
-              );
-            }
-            if (network) {
-              txs = txs.filter(tx => tx.network === network);
-            }
+            const txRes = await fetch('/api/admin/transactions?password=' + encodeURIComponent(currentPassword));
+            const txs = await txRes.json();
 
             document.getElementById('txBody').innerHTML = txs.map(tx => 
               \`<tr>
+                <td>\${tx.transactionId}</td>
                 <td>\${new Date(tx.timestamp).toLocaleString()}</td>
-                <td>\${tx.businessName}<br/><small>\${tx.businessCategory}</small></td>
-                <td>\${tx.customerName}<br/><small>\${tx.customerNumber}</small></td>
-                <td>\${tx.network}</td>
+                <td>\${tx.businessPhone}</td>
+                <td>\${tx.customerName} (\${tx.customerNumber})</td>
                 <td>\${tx.amount}</td>
                 <td>\${tx.commission}</td>
-                <td><button class="btn-flag" onclick="flagDispute('\${tx._id}')">Flag</button></td>
               </tr>\`
             ).join('');
           } catch (err) {
-            alert('Failed to load transactions. Check password.');
+            alert('Failed to load data. Check password.');
             window.location.href = '/';
           }
         }
 
-        async function flagDispute(id) {
-          const notes = prompt("Add notes for this dispute (optional):");
-          if (notes === null) return;
-
-          try {
-            const res = await fetch('/api/dispute', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                password: currentPassword,
-                transactionId: id,
-                notes: notes || ''
-              })
-            });
-            const data = await res.json();
-            if (data.success) {
-              alert('✅ Dispute flagged!');
-              loadTransactions();
-            } else {
-              alert('❌ ' + (data.error || 'Failed'));
-            }
-          } catch (e) {
-            alert('Network error');
-          }
-        }
-
-        const pwd = prompt("Enter Business Password:");
+        const pwd = prompt("Enter Admin Password:");
         if (!pwd) window.location.href = '/';
         currentPassword = pwd;
-        
-        loadStats();
-        loadTransactions();
+        loadData();
       </script>
     </body>
     </html>
