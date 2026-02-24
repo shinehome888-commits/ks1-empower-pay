@@ -1,4 +1,4 @@
-// KS1 EMPOWER PAY – ALKEBULAN (AFRICA) EDITION • BUSINESS REGISTRATION + ENHANCED UI
+// KS1 EMPOWER PAY – ALKEBULAN (AFRICA) EDITION • INSPIRING UI UPGRADE
 const express = require('express');
 const { MongoClient, ObjectId } = require('mongodb');
 const dns = require('dns');
@@ -430,7 +430,7 @@ app.get('/app', (req, res) => {
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
           font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-          background: #fff;
+          background: #0c1a3a;
           color: #1e3a8a;
           line-height: 1.5;
           padding: 0 1rem;
@@ -442,6 +442,23 @@ app.get('/app', (req, res) => {
           justify-content: center;
           padding-top: 2vh;
           padding-bottom: 2vh;
+          position: relative;
+          overflow: hidden;
+        }
+        body::before {
+          content: "";
+          position: absolute;
+          top: -50%;
+          left: -50%;
+          width: 200%;
+          height: 200%;
+          background: radial-gradient(circle, rgba(212, 175, 55, 0.2) 0%, transparent 70%);
+          z-index: -1;
+          animation: rotate 25s linear infinite;
+        }
+        @keyframes rotate {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
         }
         .container {
           background: #fff;
@@ -451,6 +468,8 @@ app.get('/app', (req, res) => {
           box-shadow: 0 8px 24px rgba(212, 175, 55, 0.15);
           border: 1px solid #f0f0f0;
           width: 100%;
+          position: relative;
+          z-index: 2;
         }
         header {
           text-align: center;
@@ -510,15 +529,13 @@ app.get('/app', (req, res) => {
           background: linear-gradient(90deg, #D4AF37, #FFD700);
           border-radius: 1px;
         }
-        input, select, button {
+        input, select {
           width: 100%;
           padding: 0.85rem;
           margin: 0.55rem 0;
           border: 1px solid #ddd;
           border-radius: 10px;
           font-size: 0.95rem;
-        }
-        input, select {
           background: #fff;
           color: #333;
           outline: none;
@@ -534,6 +551,11 @@ app.get('/app', (req, res) => {
           text-transform: uppercase;
           letter-spacing: 0.6px;
           font-size: 1rem;
+          padding: 0.9rem;
+          border: none;
+          border-radius: 10px;
+          width: 100%;
+          cursor: pointer;
           box-shadow: 
             0 4px 0 #B8860B,
             0 6px 12px rgba(212, 175, 55, 0.3);
@@ -553,12 +575,23 @@ app.get('/app', (req, res) => {
             0 2px 8px rgba(212, 175, 55, 0.2);
         }
         .btn-refresh {
-          background: #e0e7ff;
-          color: #4f46e5;
-          border: 1px solid #c7d2fe;
-          font-weight: 600;
+          background: linear-gradient(135deg, #D4AF37, #FFD700);
+          color: #1e3a8a;
+          font-weight: 700;
+          border: none;
+          border-radius: 8px;
           padding: 0.6rem;
           margin-top: 1rem;
+          cursor: pointer;
+          box-shadow: 0 3px 0 #B8860B;
+          width: 100%;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        .btn-refresh:hover {
+          background: linear-gradient(135deg, #E6C24A, #FFE04D);
+          transform: translateY(1px);
+          box-shadow: 0 2px 0 #B8860B;
         }
         #result {
           margin-top: 1rem;
@@ -586,13 +619,29 @@ app.get('/app', (req, res) => {
           font-size: 0.8rem;
           padding-top: 1.4rem;
           margin-top: auto;
-          border-top: 1px solid #eee;
+          z-index: 2;
+          position: relative;
         }
         .trademark {
           color: #555;
           font-size: 0.75rem;
           margin-top: 0.5rem;
           font-style: italic;
+        }
+        .birthday-banner {
+          background: linear-gradient(90deg, #ff6b6b, #ffd166);
+          color: white;
+          text-align: center;
+          padding: 8px;
+          border-radius: 8px;
+          margin: 10px 0;
+          font-weight: bold;
+          animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+          0% { opacity: 1; }
+          50% { opacity: 0.8; }
+          100% { opacity: 1; }
         }
       </style>
     </head>
@@ -617,7 +666,9 @@ app.get('/app', (req, res) => {
           <button class="btn-momo" onclick="pay()">
             Pay & Empower Alkebulan (AFRICA)
           </button>
-          <button class="btn-refresh" onclick="loadTransactions()">🔄 Refresh Data</button>
+          <button class="btn-refresh" onclick="loadTransactions()">
+            🔄 Refresh Data
+          </button>
           <div id="result"></div>
         </div>
       </div>
@@ -632,6 +683,29 @@ app.get('/app', (req, res) => {
         if (!businessPhone) {
           alert('Please register first');
           window.location.href = '/';
+        }
+
+        // Check for birthday
+        const today = new Date();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const todayStr = \`\${today.getFullYear()}-\${month}-\${day}\`;
+
+        async function checkBirthday() {
+          try {
+            const res = await fetch('/api/merchant/' + businessPhone);
+            const merchant = await res.json();
+            const dob = new Date(merchant.ownerDob);
+            const dobStr = \`\${today.getFullYear()}-\${String(dob.getMonth()+1).padStart(2,'0')}-\${String(dob.getDate()).padStart(2,'0')}\`;
+            
+            if (dobStr === todayStr) {
+              document.querySelector('.container').insertAdjacentHTML('afterbegin', 
+                '<div class="birthday-banner">🎉 Happy Birthday, ' + merchant.ownerName + '! Thank you for building with us.</div>'
+              );
+            }
+          } catch (e) {
+            console.log('Birthday check skipped');
+          }
         }
 
         async function pay() {
@@ -680,6 +754,7 @@ app.get('/app', (req, res) => {
           }
         }
 
+        checkBirthday();
         loadTransactions();
       </script>
     </body>
@@ -700,21 +775,40 @@ app.get('/admin', (req, res) => {
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
           font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-          background: #fff;
+          background: #0c1a3a;
           color: #1e3a8a;
           line-height: 1.5;
           padding: 1rem;
           max-width: 900px;
           margin: 0 auto;
           min-height: 100vh;
+          position: relative;
+          overflow: hidden;
+        }
+        body::before {
+          content: "";
+          position: absolute;
+          top: -50%;
+          left: -50%;
+          width: 200%;
+          height: 200%;
+          background: radial-gradient(circle, rgba(212, 175, 55, 0.15) 0%, transparent 70%);
+          z-index: -1;
+          animation: rotate 30s linear infinite;
+        }
+        @keyframes rotate {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
         }
         .container {
           background: #fff;
           border-radius: 16px;
           padding: 1.8rem;
           margin-top: 1.5rem;
-          box-shadow: 0 8px 24px rgba(212, 175, 55, 0.15);
-          border: 1px solid #f0f0f0;
+          box-shadow: 0 8px 24px rgba(212, 175, 55, 0.2);
+          border: 1px solid rgba(212, 175, 55, 0.2);
+          position: relative;
+          z-index: 2;
         }
         h1 {
           font-size: 2.2rem;
@@ -737,6 +831,15 @@ app.get('/admin', (req, res) => {
           background: linear-gradient(90deg, #D4AF37, #FFD700);
           border-radius: 2px;
         }
+        .mission-banner {
+          background: linear-gradient(90deg, #1e3a8a, #3b82f6);
+          color: white;
+          padding: 12px;
+          border-radius: 8px;
+          margin-bottom: 20px;
+          text-align: center;
+          font-weight: 600;
+        }
         .stats {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -744,15 +847,26 @@ app.get('/admin', (req, res) => {
           margin-bottom: 1.6rem;
         }
         .stat-card {
-          background: #fafafa;
+          background: #f8fafc;
           padding: 1.2rem;
           border-radius: 12px;
           text-align: center;
-          border: 1px solid #eee;
+          border: 1px solid #e2e8f0;
           box-shadow: 0 3px 8px rgba(0,0,0,0.05);
+          position: relative;
+          overflow: hidden;
+        }
+        .stat-card::before {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 4px;
+          background: linear-gradient(90deg, #D4AF37, #FFD700);
         }
         .stat-label {
-          color: #666;
+          color: #64748b;
           font-size: 0.95rem;
           margin-bottom: 0.4rem;
         }
@@ -767,17 +881,15 @@ app.get('/admin', (req, res) => {
           margin-bottom: 1.4rem;
           flex-wrap: wrap;
         }
-        .filters input, .filters select, .filters button {
+        .filters input, .filters select {
           padding: 0.7rem;
           border: 1px solid #ddd;
           border-radius: 8px;
           font-size: 0.95rem;
-        }
-        .filters input, .filters select {
           flex: 1;
           min-width: 150px;
         }
-        .btn-filter {
+        .btn-filter, .btn-refresh {
           background: linear-gradient(135deg, #D4AF37, #FFD700);
           color: #1e3a8a;
           font-weight: 700;
@@ -786,14 +898,13 @@ app.get('/admin', (req, res) => {
           padding: 0.7rem 1.2rem;
           cursor: pointer;
           box-shadow: 0 3px 0 #B8860B;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
         }
-        .btn-refresh {
-          background: #e0e7ff;
-          color: #4f46e5;
-          border: 1px solid #c7d2fe;
-          font-weight: 600;
-          padding: 0.6rem;
-          margin-left: 10px;
+        .btn-filter:hover, .btn-refresh:hover {
+          background: linear-gradient(135deg, #E6C24A, #FFE04D);
+          transform: translateY(1px);
+          box-shadow: 0 2px 0 #B8860B;
         }
         table {
           width: 100%;
@@ -813,26 +924,15 @@ app.get('/admin', (req, res) => {
         tr:hover {
           background: #fdf6ee;
         }
-        .btn-flag {
-          background: #ef4444;
-          color: white;
-          border: none;
-          padding: 0.3rem 0.6rem;
-          border-radius: 6px;
-          font-size: 0.85rem;
-          cursor: pointer;
-          box-shadow: 0 2px 0 #b91c1c;
-        }
-        .btn-flag:hover {
-          background: #dc2626;
-          transform: translateY(1px);
-        }
         .footer {
           text-align: center;
           color: #666;
           font-size: 0.85rem;
           padding-top: 1.8rem;
           border-top: 1px solid #eee;
+          margin-top: 2rem;
+          position: relative;
+          z-index: 2;
         }
       </style>
     </head>
@@ -840,6 +940,10 @@ app.get('/admin', (req, res) => {
       <div class="container">
         <h1>KS1 Empower Pay Admin</h1>
         
+        <div class="mission-banner">
+          🌍 Every transaction fuels our mission to empower African SMEs with sovereign digital tools.
+        </div>
+
         <div class="stats">
           <div class="stat-card">
             <div class="stat-label">Total Transactions</div>
