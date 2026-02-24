@@ -1,4 +1,4 @@
-// KS1 EMPOWER PAY – ALKEBULAN (AFRICA) EDITION • PASSWORD RESET + THEME + ENHANCED UI
+// KS1 EMPOWER PAY – ALKEBULAN (AFRICA) EDITION • FINAL PRODUCTION VERSION
 const express = require('express');
 const { MongoClient, ObjectId } = require('mongodb');
 const dns = require('dns');
@@ -66,7 +66,7 @@ app.post('/api/register', async (req, res) => {
       businessSince: parseInt(businessSince),
       businessPhone,
       network,
-      password: null, // will be set on first login or reset
+      password: null,
       totalTransactions: 0,
       totalVolume: 0,
       active: true,
@@ -95,7 +95,6 @@ app.post('/api/login', async (req, res) => {
       return res.status(404).json({ error: 'Business not found' });
     }
 
-    // If no password set, use default
     const expectedPass = merchant.password || BUSINESS_PASSWORD;
     if (password !== expectedPass) {
       return res.status(401).json({ error: 'Invalid password' });
@@ -123,7 +122,7 @@ app.post('/api/reset-request', async (req, res) => {
     const resetCode = generateId('KS1');
     await db.collection('merchants').updateOne(
       { businessPhone },
-      { $set: { resetCode, resetExpiry: new Date(Date.now() + 30 * 60000) } } // 30 mins
+      { $set: { resetCode, resetExpiry: new Date(Date.now() + 30 * 60000) } }
     );
 
     res.json({ success: true, resetCode });
@@ -224,9 +223,15 @@ app.post('/api/momo/request', async (req, res) => {
   }
 });
 
-// === SUPPORT ===
+// === REPORT TECHNICAL ISSUE ===
 app.post('/api/support', async (req, res) => {
-  const { businessPhone, issue } = req.body;
+  const { 
+    businessPhone, 
+    issue, 
+    ownerName = '—', 
+    businessName = '—' 
+  } = req.body;
+  
   if (!businessPhone || !issue) {
     return res.status(400).json({ error: 'Business phone and issue required' });
   }
@@ -234,12 +239,14 @@ app.post('/api/support', async (req, res) => {
   try {
     const report = {
       businessPhone,
+      ownerName,
+      businessName,
       issue,
       reportedAt: new Date(),
       resolved: false
     };
     await db.collection('support').insertOne(report);
-    res.json({ success: true, message: "Support ticket created." });
+    res.json({ success: true, message: "Support ticket created. Admin will contact you soon." });
   } catch (err) {
     res.status(500).json({ error: 'Failed to submit support request' });
   }
@@ -310,11 +317,12 @@ app.get('/', (req, res) => {
           min-height: 100vh;
           display: flex;
           flex-direction: column;
-          justify-content: center;
+          justify-content: flex-start;
           padding-top: 2vh;
           padding-bottom: 2vh;
           position: relative;
-          overflow: hidden;
+          overflow-x: hidden;
+          overflow-y: auto; /* ✅ SCROLLABLE */
         }
         body::before {
           content: "";
@@ -339,6 +347,7 @@ app.get('/', (req, res) => {
           width: 100%;
           backdrop-filter: blur(10px);
           border: 1px solid rgba(212, 175, 55, 0.3);
+          margin-bottom: 2rem;
         }
         h1 {
           font-size: 2.2rem;
@@ -444,7 +453,7 @@ app.get('/', (req, res) => {
           text-align: center;
           color: #94a3b8;
           font-size: 0.8rem;
-          padding-top: 1.4rem;
+          padding: 1.4rem 0;
           margin-top: auto;
         }
         .trademark {
@@ -571,6 +580,8 @@ app.get('/', (req, res) => {
             const d = await res.json();
             if (d.success) {
               localStorage.setItem('businessPhone', data.businessPhone);
+              localStorage.setItem('ownerName', data.ownerName);
+              localStorage.setItem('businessName', data.businessName);
               window.location.href = '/app';
             } else {
               errorEl.textContent = d.error || 'Registration failed';
@@ -642,13 +653,20 @@ app.get('/', (req, res) => {
           const issue = prompt("Describe your technical issue:");
           if (!issue) return;
 
-          // Use a dummy phone for landing page support
-          const phone = '+233000000000';
+          let businessPhone = localStorage.getItem('businessPhone') || prompt("Your Business Phone (+233...):");
+          let ownerName = localStorage.getItem('ownerName') || prompt("Your Full Name:");
+          let businessName = localStorage.getItem('businessName') || prompt("Your Business Name:");
+
+          if (!businessPhone || !ownerName || !businessName) {
+            alert('Please provide all details.');
+            return;
+          }
+
           try {
             const res = await fetch('/api/support', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ businessPhone: phone, issue })
+              body: JSON.stringify({ businessPhone, ownerName, businessName, issue })
             });
             const d = await res.json();
             alert(d.message || 'Support request sent!');
@@ -828,15 +846,22 @@ app.get('/app', (req, res) => {
           text-align: center;
         }
         .theme-toggle {
+          background: linear-gradient(135deg, #D4AF37, #FFD700);
+          color: #1e3a8a;
+          font-weight: 700;
+          border: none;
+          border-radius: 20px;
+          padding: 6px 12px;
+          font-size: 0.85rem;
+          cursor: pointer;
+          box-shadow: 0 2px 0 #B8860B;
           display: block;
           margin: 15px auto;
-          background: #e0e7ff;
-          color: #4f46e5;
-          border: 1px solid #c7d2fe;
-          font-weight: 600;
-          padding: 0.6rem;
-          border-radius: 8px;
-          cursor: pointer;
+          width: auto;
+        }
+        .theme-toggle:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 3px 0 #B8860B, 0 4px 8px rgba(212, 175, 55, 0.3);
         }
         .footer {
           text-align: center;
@@ -878,7 +903,7 @@ app.get('/app', (req, res) => {
           <div id="result"></div>
         </div>
 
-        <button class="theme-toggle" onclick="toggleTheme()">🌓 Toggle Light/Dark Theme</button>
+        <button class="theme-toggle" onclick="toggleTheme()">🌓 Light/Dark</button>
       </div>
 
       <div class="footer">
@@ -893,7 +918,6 @@ app.get('/app', (req, res) => {
           window.location.href = '/';
         }
 
-        // Theme toggle
         function toggleTheme() {
           const isDark = document.body.classList.contains('dark-mode');
           if (isDark) {
@@ -983,7 +1007,7 @@ app.get('/admin', (req, res) => {
           min-height: 100vh;
           position: relative;
           overflow-x: hidden;
-          overflow-y: auto;
+          overflow-y: auto; /* ✅ SCROLLABLE */
         }
         body::before {
           content: "";
@@ -1308,7 +1332,7 @@ app.get('/admin', (req, res) => {
 
             document.getElementById('supportBody').innerHTML = data.supportTickets.map(t => 
               \`<tr>
-                <td>\${t.businessPhone}</td>
+                <td>\${t.businessName} (\${t.ownerName})<br/><small>\${t.businessPhone}</small></td>
                 <td>\${t.issue}</td>
                 <td>\${new Date(t.reportedAt).toLocaleString()}</td>
               </tr>\`
