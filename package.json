@@ -1,0 +1,17 @@
+{
+  "name": "ks1-empower-pay",
+  "version": "1.0.0",
+  "description": "Nonprofit payment router for African SMEs by KS1 Empire Group & Foundation (KS1EGF)",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "engines": {
+    "node": "22.22.0"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "mongodb": "^6.3.0"
+  },
+  "license": "MIT"
+}
