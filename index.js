@@ -246,7 +246,7 @@ app.post('/api/support', async (req, res) => {
       resolved: false
     };
     await db.collection('support').insertOne(report);
-    res.json({ success: true, message: "Support ticket created. Admin will contact you soon." });
+    res.json({ success: true, message: "Support ticket created." });
   } catch (err) {
     res.status(500).json({ error: 'Failed to submit support request' });
   }
@@ -918,6 +918,21 @@ app.get('/app', (req, res) => {
           window.location.href = '/';
         }
 
+        // Auto-logout after 45s
+        let inactivityTimer;
+        function resetTimer() {
+          clearTimeout(inactivityTimer);
+          inactivityTimer = setTimeout(() => {
+            localStorage.removeItem('businessPhone');
+            alert('Session expired for security.');
+            window.location.href = '/';
+          }, 45000);
+        }
+        ['click','touchstart','keypress','scroll'].forEach(e => {
+          document.addEventListener(e, resetTimer, true);
+        });
+        resetTimer();
+
         function toggleTheme() {
           const isDark = document.body.classList.contains('dark-mode');
           if (isDark) {
@@ -1016,7 +1031,7 @@ app.get('/admin', (req, res) => {
           left: -50%;
           width: 200%;
           height: 200%;
-          background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+          background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
           z-index: -1;
           animation: rotate 25s linear infinite;
         }
@@ -1030,7 +1045,7 @@ app.get('/admin', (req, res) => {
           padding: 1.8rem;
           margin-top: 1.5rem;
           margin-bottom: 2rem;
-          box-shadow: 0 8px 24px rgba(212, 175, 55, 0.2);
+          box-shadow: 0 8px 24px rgba(212, 175, 55, 0.25);
           border: 1px solid rgba(212, 175, 55, 0.3);
           position: relative;
           z-index: 2;
@@ -1161,6 +1176,19 @@ app.get('/admin', (req, res) => {
           transform: translateY(-2px);
           box-shadow: 0 5px 0 #B8860B, 0 8px 16px rgba(212, 175, 55, 0.3);
         }
+        .theme-toggle {
+          background: linear-gradient(135deg, #D4AF37, #FFD700);
+          color: #0c1a3a;
+          font-weight: 700;
+          border: none;
+          border-radius: 20px;
+          padding: 6px 12px;
+          font-size: 0.85rem;
+          cursor: pointer;
+          box-shadow: 0 2px 0 #B8860B;
+          display: inline-block;
+          margin-left: 10px;
+        }
         table {
           width: 100%;
           border-collapse: collapse;
@@ -1216,6 +1244,16 @@ app.get('/admin', (req, res) => {
           position: relative;
           z-index: 2;
         }
+        /* Mobile optimization */
+        @media (max-width: 600px) {
+          .filters { flex-direction: column; }
+          .filters input, .filters select, .btn-filter, .btn-generate {
+            width: 100%;
+            min-width: auto;
+          }
+          table { font-size: 0.85rem; }
+          th, td { padding: 0.6rem 0.3rem; }
+        }
       </style>
     </head>
     <body>
@@ -1255,6 +1293,7 @@ app.get('/admin', (req, res) => {
             <option value="AirtelTogo">AirtelTogo</option>
           </select>
           <button class="btn-filter" onclick="loadData()">Apply</button>
+          <button class="theme-toggle" onclick="toggleTheme()">🌓 Theme</button>
         </div>
 
         <!-- Password Reset Section -->
@@ -1313,6 +1352,35 @@ app.get('/admin', (req, res) => {
 
       <script>
         let currentPassword = '';
+
+        // Auto-logout after 45s
+        let inactivityTimer;
+        function resetTimer() {
+          clearTimeout(inactivityTimer);
+          inactivityTimer = setTimeout(() => {
+            localStorage.removeItem('adminAuth');
+            alert('Session expired for security.');
+            window.location.href = '/';
+          }, 45000);
+        }
+        ['click','touchstart','keypress','scroll'].forEach(e => {
+          document.addEventListener(e, resetTimer, true);
+        });
+        resetTimer();
+
+        // Theme toggle
+        function toggleTheme() {
+          const isBlue = document.body.style.background.includes('#0c1a3a');
+          if (isBlue) {
+            document.body.style.background = '#fff';
+            document.body.style.color = '#1e3a8a';
+            document.querySelector('.container').style.background = 'rgba(255,255,255,0.9)';
+          } else {
+            document.body.style.background = '#0c1a3a';
+            document.body.style.color = '#fff';
+            document.querySelector('.container').style.background = 'rgba(12, 26, 58, 0.9)';
+          }
+        }
 
         async function loadData() {
           try {
@@ -1412,10 +1480,45 @@ app.get('/admin', (req, res) => {
           }
         }
 
-        const pwd = prompt("Enter Admin Password:");
-        if (!pwd) window.location.href = '/';
-        currentPassword = pwd;
-        loadData();
+        // Beautiful admin login
+        function showAdminLogin() {
+          const overlay = document.createElement('div');
+          overlay.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(12, 26, 58, 0.95);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 1000;
+          `;
+          overlay.innerHTML = \`
+            <div style="background: rgba(12, 26, 58, 0.9); padding: 2rem; border-radius: 16px; text-align: center; max-width: 400px; width: 90%;">
+              <h2 style="color: #FFD700; margin-bottom: 1.5rem; font-size: 1.5rem;">🔐 Admin Access</h2>
+              <input type="password" id="adminPassInput" placeholder="Enter Admin Password" style="width:100%; padding:0.8rem; border:1px solid #444; border-radius:8px; background:rgba(0,0,0,0.3); color:white; margin-bottom:1rem;"/>
+              <button class="btn-generate" onclick="submitAdminPass()">Enter</button>
+            </div>
+          \`;
+          document.body.appendChild(overlay);
+        }
+
+        async function submitAdminPass() {
+          const pass = document.getElementById('adminPassInput').value;
+          if (!pass) return;
+          try {
+            const res = await fetch('/api/admin/data?password=' + encodeURIComponent(pass));
+            const data = await res.json();
+            if (data.stats) {
+              currentPassword = pass;
+              document.body.removeChild(document.body.lastChild);
+              loadData();
+            } else {
+              alert('Invalid password');
+            }
+          } catch (e) {
+            alert('Login failed');
+          }
+        }
+
+        // Start with login
+        showAdminLogin();
       </script>
     </body>
     </html>
