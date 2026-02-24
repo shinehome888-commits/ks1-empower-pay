@@ -106,32 +106,7 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// === REQUEST PASSWORD RESET (ADMIN) ===
-app.post('/api/reset-request', async (req, res) => {
-  const { password, businessPhone } = req.body;
-  if (password !== BUSINESS_PASSWORD) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
-  try {
-    const merchant = await db.collection('merchants').findOne({ businessPhone });
-    if (!merchant) {
-      return res.status(404).json({ error: 'Business not found' });
-    }
-
-    const resetCode = generateId('KS1');
-    await db.collection('merchants').updateOne(
-      { businessPhone },
-      { $set: { resetCode, resetExpiry: new Date(Date.now() + 30 * 60000) } }
-    );
-
-    res.json({ success: true, resetCode });
-  } catch (err) {
-    res.status(500).json({ error: 'Reset request failed' });
-  }
-});
-
-// === RESET PASSWORD ===
+// === RESET PASSWORD (USER) ===
 app.post('/api/reset-password', async (req, res) => {
   const { businessPhone, resetCode, newPassword } = req.body;
   if (!businessPhone || !resetCode || !newPassword) {
@@ -160,6 +135,31 @@ app.post('/api/reset-password', async (req, res) => {
     res.json({ success: true, message: "Password updated" });
   } catch (err) {
     res.status(500).json({ error: 'Password reset failed' });
+  }
+});
+
+// === GENERATE RESET CODE (ADMIN) ===
+app.post('/api/admin/generate-reset', async (req, res) => {
+  const { password, businessPhone } = req.body;
+  if (password !== BUSINESS_PASSWORD) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  try {
+    const merchant = await db.collection('merchants').findOne({ businessPhone });
+    if (!merchant) {
+      return res.status(404).json({ error: 'Business not found' });
+    }
+
+    const resetCode = generateId('KS1');
+    await db.collection('merchants').updateOne(
+      { businessPhone },
+      { $set: { resetCode, resetExpiry: new Date(Date.now() + 30 * 60000) } }
+    );
+
+    res.json({ success: true, resetCode, businessName: merchant.businessName });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to generate reset code' });
   }
 });
 
@@ -322,7 +322,7 @@ app.get('/', (req, res) => {
           padding-bottom: 2vh;
           position: relative;
           overflow-x: hidden;
-          overflow-y: auto; /* ✅ SCROLLABLE */
+          overflow-y: auto;
         }
         body::before {
           content: "";
@@ -1007,7 +1007,7 @@ app.get('/admin', (req, res) => {
           min-height: 100vh;
           position: relative;
           overflow-x: hidden;
-          overflow-y: auto; /* ✅ SCROLLABLE */
+          overflow-y: auto;
         }
         body::before {
           content: "";
@@ -1142,6 +1142,25 @@ app.get('/admin', (req, res) => {
           transform: translateY(-2px);
           box-shadow: 0 5px 0 #B8860B, 0 8px 16px rgba(212, 175, 55, 0.3);
         }
+        .btn-generate {
+          background: linear-gradient(135deg, #D4AF37, #FFD700);
+          color: #0c1a3a;
+          font-weight: 700;
+          border: none;
+          border-radius: 8px;
+          padding: 0.7rem 1.2rem;
+          cursor: pointer;
+          box-shadow: 0 3px 0 #B8860B;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          min-width: 180px;
+          transition: all 0.2s ease;
+        }
+        .btn-generate:hover {
+          background: linear-gradient(135deg, #E6C24A, #FFE04D);
+          transform: translateY(-2px);
+          box-shadow: 0 5px 0 #B8860B, 0 8px 16px rgba(212, 175, 55, 0.3);
+        }
         table {
           width: 100%;
           border-collapse: collapse;
@@ -1177,6 +1196,15 @@ app.get('/admin', (req, res) => {
           height: 2px;
           background: linear-gradient(90deg, #D4AF37, #FFD700);
           border-radius: 1px;
+        }
+        #resetResult {
+          background: rgba(212, 175, 55, 0.1);
+          padding: 12px;
+          border-radius: 8px;
+          color: #FFD700;
+          font-weight: bold;
+          display: none;
+          margin-top: 10px;
         }
         .footer {
           text-align: center;
@@ -1228,6 +1256,14 @@ app.get('/admin', (req, res) => {
           </select>
           <button class="btn-filter" onclick="loadData()">Apply</button>
         </div>
+
+        <!-- Password Reset Section -->
+        <div class="section-title">🔑 Generate Password Reset Code</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;">
+          <input type="text" id="resetPhoneAdmin" placeholder="Business Phone (+233...)" style="padding:0.7rem;border:1px solid #444;border-radius:8px;background:rgba(0,0,0,0.3);color:white;flex:1;min-width:200px;"/>
+          <button class="btn-generate" onclick="generateResetCode()">Generate Code</button>
+        </div>
+        <div id="resetResult"></div>
 
         <div class="section-title">🆕 New Businesses</div>
         <table id="bizTable">
@@ -1340,6 +1376,39 @@ app.get('/admin', (req, res) => {
           } catch (err) {
             alert('Failed to load admin data. Check password.');
             window.location.href = '/';
+          }
+        }
+
+        async function generateResetCode() {
+          const phone = document.getElementById('resetPhoneAdmin').value;
+          const resultDiv = document.getElementById('resetResult');
+          
+          if (!phone || !phone.startsWith('+233')) {
+            alert('Please enter a valid +233 business phone number');
+            return;
+          }
+
+          try {
+            const res = await fetch('/api/admin/generate-reset', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                password: currentPassword,
+                businessPhone: phone 
+              })
+            });
+            const data = await res.json();
+            
+            if (data.success) {
+              resultDiv.innerHTML = \`✅ Reset code for <b>\${data.businessName}</b>:<br/><b style="font-size:1.2em;">\${data.resetCode}</b><br/><small>Valid for 30 minutes</small>\`;
+              resultDiv.style.display = 'block';
+            } else {
+              resultDiv.innerHTML = \`❌ \${data.error}\`;
+              resultDiv.style.display = 'block';
+            }
+          } catch (e) {
+            resultDiv.innerHTML = '❌ Network error';
+            resultDiv.style.display = 'block';
           }
         }
 
