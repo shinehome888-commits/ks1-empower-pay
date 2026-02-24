@@ -1489,13 +1489,13 @@ app.get('/admin', (req, res) => {
             display: flex; align-items: center; justify-content: center;
             z-index: 1000;
           `;
-          overlay.innerHTML = \`
+          overlay.innerHTML = `
             <div style="background: rgba(12, 26, 58, 0.9); padding: 2rem; border-radius: 16px; text-align: center; max-width: 400px; width: 90%;">
               <h2 style="color: #FFD700; margin-bottom: 1.5rem; font-size: 1.5rem;">🔐 Admin Access</h2>
               <input type="password" id="adminPassInput" placeholder="Enter Admin Password" style="width:100%; padding:0.8rem; border:1px solid #444; border-radius:8px; background:rgba(0,0,0,0.3); color:white; margin-bottom:1rem;"/>
               <button class="btn-generate" onclick="submitAdminPass()">Enter</button>
             </div>
-          \`;
+          `;
           document.body.appendChild(overlay);
         }
 
