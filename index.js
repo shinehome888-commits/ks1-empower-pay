@@ -1,6 +1,6 @@
-// KS1 EMPOWER PAY – ALKEBULAN (AFRICA) EDITION • FULL BACKEND
+// KS1 EMPOWER PAY – ALKEBULAN (AFRICA) EDITION • FULL BACKEND WITH DISPUTE SYSTEM
 const express = require('express');
-const { MongoClient } = require('mongodb');
+const { MongoClient, ObjectId } = require('mongodb');
 const dns = require('dns');
 
 // 🔑 Force IPv4 for Render + MongoDB Atlas
@@ -100,6 +100,42 @@ app.get('/api/merchants', async (req, res) => {
   }
 });
 
+// === FLAG TRANSACTION AS DISPUTED ===
+app.post('/api/dispute', async (req, res) => {
+  const { password, transactionId, notes = '' } = req.body;
+  
+  if (!password || password !== BUSINESS_PASSWORD) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  if (!transactionId) {
+    return res.status(400).json({ error: 'Transaction ID required' });
+  }
+
+  try {
+    const result = await db.collection('transactions').updateOne(
+      { _id: new ObjectId(transactionId) },
+      { 
+        $set: { 
+          disputeFlag: true,
+          resolved: false,
+          notes,
+          updatedAt: new Date()
+        } 
+      }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: 'Transaction not found' });
+    }
+
+    res.json({ success: true, message: 'Dispute flagged' });
+  } catch (err) {
+    console.error("Dispute error:", err.message);
+    res.status(500).json({ error: 'Failed to flag dispute' });
+  }
+});
+
 // === CREATE TRANSACTION ===
 app.post('/api/momo/request', async (req, res) => {
   const { 
@@ -139,7 +175,8 @@ app.post('/api/momo/request', async (req, res) => {
     // Admin tracking
     disputeFlag: false,
     resolved: false,
-    notes: ''
+    notes: '',
+    updatedAt: new Date()
   };
 
   try {
@@ -402,15 +439,35 @@ app.get('/admin', (req, res) => {
               <td>\${tx.network}</td>
               <td>GHS \${tx.amount}</td>
               <td>
-                <button onclick="flagDispute('\${tx._id}')" style="background:red;color:white;padding:4px;font-size:12px;">Flag</button>
+                <button onclick="flagDispute('\${tx._id}')" style="background:red;color:white;padding:4px;font-size:12px;border:none;cursor:pointer;">Flag</button>
               </td>
             </tr>\`
           ).join('');
         }
 
         async function flagDispute(id) {
-          if (confirm('Mark this transaction as disputed?')) {
-            alert('Dispute flagged! (Future: notify admin)');
+          const notes = prompt("Add notes for this dispute (optional):");
+          if (notes === null) return;
+
+          try {
+            const res = await fetch('/api/dispute', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                password: currentPassword,
+                transactionId: id,
+                notes: notes || ''
+              })
+            });
+            const data = await res.json();
+            if (data.success) {
+              alert('✅ Dispute flagged and saved!');
+              loadTransactions(); // refresh list
+            } else {
+              alert('❌ ' + (data.error || 'Failed'));
+            }
+          } catch (e) {
+            alert('Network error');
           }
         }
 
