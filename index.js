@@ -1,15 +1,13 @@
-// KS1 EMPOWER PAY – ALKEBULAN (AFRICA) EDITION • FULL BACKEND WITH DISPUTE SYSTEM
+// KS1 EMPOWER PAY – ALKEBULAN (AFRICA) EDITION • 1% NONPROFIT MODEL
 const express = require('express');
 const { MongoClient, ObjectId } = require('mongodb');
 const dns = require('dns');
 
-// 🔑 Force IPv4 for Render + MongoDB Atlas
 dns.setDefaultResultOrder('ipv4first');
 
 const app = express();
 app.use(express.json());
 
-// === CONFIGURATION ===
 const BUSINESS_PASSWORD = process.env.BUSINESS_PASSWORD || "ks1empower2026";
 const MONGODB_URI = process.env.MONGODB_URI;
 
@@ -152,6 +150,11 @@ app.post('/api/momo/request', async (req, res) => {
     return res.status(400).json({ error: 'Invalid input' });
   }
 
+  // ✅ 1% solidarity contribution
+  const commissionRate = 0.01; // 1%
+  const commission = parseFloat((amount * commissionRate).toFixed(2));
+  const netToMerchant = parseFloat((amount - commission).toFixed(2));
+
   const transaction = {
     businessName,
     customerName,
@@ -159,13 +162,13 @@ app.post('/api/momo/request', async (req, res) => {
     businessPhone,
     network,
     amount: parseFloat(amount),
-    commission: parseFloat((amount * 0.003).toFixed(2)),
-    netToMerchant: parseFloat((amount * 0.997).toFixed(2)),
+    commission,
+    netToMerchant,
     status: 'completed',
     timestamp: new Date(),
     paymentMethod: 'momo',
 
-    // ✅ Business context
+    // Business context
     businessCategory: req.body.category || 'Other',
     businessLocation: req.body.location || '—',
     businessSince: req.body.since ? parseInt(req.body.since) : new Date().getFullYear(),
@@ -233,6 +236,13 @@ app.get('/', (req, res) => {
     <body style="background:#000;color:#fff;padding:20px;font-family:sans-serif;text-align:center;">
       <h1>KS1 Empower Pay</h1>
       <p>Secure Access For Authorized Merchants</p>
+      
+      <!-- Nonprofit Mission Note -->
+      <div style="background:#1e3a8a;padding:12px;border-radius:8px;margin:15px 0;color:#dbeafe;font-size:14px;">
+        💡 <strong>1% of every transaction funds our nonprofit mission</strong> to build open, non-custodial payment infrastructure for African SMEs.
+        <br/>You transact. We grow. Together, we thrive.
+      </div>
+
       <input type="password" id="pwd" placeholder="Business Password" style="padding:8px;width:80%;margin:10px 0;"/>
       <br/>
       <button onclick="login()" style="background:#FFD700;color:#000;border:none;padding:10px 20px;font-weight:bold;">Access Dashboard</button>
@@ -260,6 +270,14 @@ app.get('/app', (req, res) => {
     <head><title>Dashboard</title></head>
     <body style="background:#000;color:#fff;padding:20px;font-family:sans-serif;">
       <h1>Dashboard</h1>
+      
+      <!-- Mission Reminder -->
+      <div style="background:#1e3a8a;padding:12px;border-radius:8px;margin-bottom:20px;color:#dbeafe;font-size:14px;">
+        💡 <strong>1% solidarity contribution</strong> from each transaction supports KS1 Empower Pay’s growth.
+        <br/><strong>Please remind customers to include Mobile Money network charges</strong> when sending funds.
+        <br/>We do <em>not</em> cover transaction fees.
+      </div>
+
       <h2>Create Mobile Money Payment</h2>
       <input id="bname" placeholder="Business Name" style="display:block;width:100%;padding:8px;margin:5px 0;"/><br/>
       <input id="cname" placeholder="Customer Name" style="display:block;width:100%;padding:8px;margin:5px 0;"/><br/>
@@ -365,6 +383,12 @@ app.get('/admin', (req, res) => {
     <body style="background:#000;color:#fff;padding:20px;font-family:sans-serif;">
       <h1>KS1 Empower Pay Admin</h1>
       
+      <!-- Mission Banner -->
+      <div style="background:#1e3a8a;padding:12px;border-radius:8px;margin-bottom:20px;color:#dbeafe;font-size:14px;">
+        🌍 <strong>Nonprofit-Powered Platform</strong><br/>
+        1% of every transaction fuels our mission to empower African SMEs with sovereign digital tools.
+      </div>
+      
       <!-- Stats -->
       <div id="stats" style="margin:20px 0;"></div>
 
@@ -462,7 +486,7 @@ app.get('/admin', (req, res) => {
             const data = await res.json();
             if (data.success) {
               alert('✅ Dispute flagged and saved!');
-              loadTransactions(); // refresh list
+              loadTransactions();
             } else {
               alert('❌ ' + (data.error || 'Failed'));
             }
