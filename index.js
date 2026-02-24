@@ -1297,45 +1297,4 @@ app.get('/admin', (req, res) => {
         <!-- Password Reset Section -->
         <div class="section-title">🔑 Generate Password Reset Code</div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;justify-content:center;">
-          <input type="text" id="resetPhoneAdmin" placeholder="Business Phone (+233...)" style="padding:0.7rem;border:1px solid #444;border-radius:8px;background:rgba(0,0,0,0.3);color:white;flex:1;min-width:200px;"/>
-          <button class="btn-generate" onclick="generateResetCode()">Generate Code</button>
-        </div>
-
-        <!-- Unified Dashboard Button -->
-        <button class="btn-view-all" onclick="viewFullDashboard()" style="margin: 20px auto; display: block;">📊 View Full Dashboard</button>
-
-        <div id="resetResult"></div>
-      </div>
-
-      <!-- Full Dashboard Modal -->
-      <div id="dashboardModal" class="modal">
-        <div class="modal-content">
-          <span class="close" onclick="closeModal()">&times;</span>
-          <h2 style="color:#FFD700;text-align:center;margin-bottom:1.5rem;">Full Admin Dashboard</h2>
-
-          <div class="section-title">🆕 New Businesses</div>
-          <table id="bizTable">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Owner (DOB)</th>
-                <th>Phone</th>
-                <th>Since</th>
-                <th>Joined</th>
-              </tr>
-            </thead>
-            <tbody id="bizBody"></tbody>
-          </table>
-
-          <div class="section-title">💸 Recent Transactions</div>
-          <table id="txTable">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Date</th>
-                <th>Business</th>
-                <th>Customer</th>
-                <th>Amount (GHS)</th>
-                <th>Commission (GHS)</th>
-              </tr>
-            </
+          <input type="text" id="resetPhoneAdmin" placeholder="Business Phone (+23
