@@ -1,4 +1,4 @@
-// KS1 EMPOWER PAY – ALKEBULAN (AFRICA) EDITION • FINAL MONGODB BACKEND
+// KS1 EMPOWER PAY – ALKEBULAN (AFRICA) EDITION • FULL BACKEND
 const express = require('express');
 const { MongoClient } = require('mongodb');
 const dns = require('dns');
@@ -24,7 +24,7 @@ async function initDB() {
   try {
     const client = new MongoClient(MONGODB_URI, {
       tls: true,
-      tlsAllowInvalidCertificates: true, // ✅ Required for Node.js 22 + Atlas on Render
+      tlsAllowInvalidCertificates: true,
       serverSelectionTimeoutMS: 5000,
     });
     await client.connect();
@@ -39,6 +39,65 @@ async function initDB() {
 // === HEALTH CHECK ===
 app.get('/api/test', (req, res) => {
   res.json({ status: '✅ LIVE', nonprofit: 'KS1 Empire Group & Foundation' });
+});
+
+// === SAVE MERCHANT PROFILE ===
+app.post('/api/profile', async (req, res) => {
+  const { 
+    businessName,
+    businessPhone,
+    category = 'Other',
+    location = '—',
+    since = new Date().getFullYear(),
+    contactPreference = 'whatsapp',
+    optedIntoPromos = false
+  } = req.body;
+
+  if (!businessName || !businessPhone) {
+    return res.status(400).json({ error: 'Business name and phone required' });
+  }
+
+  try {
+    await db.collection('merchants').updateOne(
+      { businessPhone },
+      {
+        $set: {
+          businessName,
+          businessPhone,
+          category,
+          location,
+          since: parseInt(since),
+          contactPreference,
+          optedIntoPromos,
+          active: true,
+          updatedAt: new Date()
+        }
+      },
+      { upsert: true }
+    );
+    res.json({ success: true, message: "Profile saved" });
+  } catch (err) {
+    console.error("Profile save error:", err.message);
+    res.status(500).json({ error: 'Failed to save profile' });
+  }
+});
+
+// === GET ALL MERCHANTS (for admin) ===
+app.get('/api/merchants', async (req, res) => {
+  const { password } = req.query;
+  if (!password || password !== BUSINESS_PASSWORD) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  try {
+    const merchants = await db.collection('merchants')
+      .find({ active: true })
+      .sort({ businessName: 1 })
+      .toArray();
+    res.json(merchants);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch merchants' });
+  }
 });
 
 // === CREATE TRANSACTION ===
@@ -68,7 +127,19 @@ app.post('/api/momo/request', async (req, res) => {
     netToMerchant: parseFloat((amount * 0.997).toFixed(2)),
     status: 'completed',
     timestamp: new Date(),
-    paymentMethod: 'momo'
+    paymentMethod: 'momo',
+
+    // ✅ Business context
+    businessCategory: req.body.category || 'Other',
+    businessLocation: req.body.location || '—',
+    businessSince: req.body.since ? parseInt(req.body.since) : new Date().getFullYear(),
+    contactPreference: req.body.contactPreference || 'whatsapp',
+    optedIntoPromos: req.body.optedIntoPromos || false,
+
+    // Admin tracking
+    disputeFlag: false,
+    resolved: false,
+    notes: ''
   };
 
   try {
@@ -166,6 +237,22 @@ app.get('/app', (req, res) => {
       <input id="cphone" placeholder="Customer MoMo" value="+233240000000" style="display:block;width:100%;padding:8px;margin:5px 0;"/><br/>
       <button onclick="pay()" style="background:#FFD700;color:#000;border:none;padding:10px 20px;font-weight:bold;">Pay & Empower Alkebulan (AFRICA)</button>
       <div id="res" style="margin-top:20px;"></div>
+
+      <!-- Business Profile Section -->
+      <div class="card" style="margin-top:30px;padding:15px;background:#111;border-radius:8px;">
+        <h2>Business Profile (Optional but Recommended)</h2>
+        <select id="category" style="width:100%;padding:8px;margin:5px 0;">
+          <option value="Retail">Retail / Shop</option>
+          <option value="Food">Food / Restaurant</option>
+          <option value="Services">Services (Hair, Repair, etc.)</option>
+          <option value="Agriculture">Agriculture / Farming</option>
+          <option value="Other">Other</option>
+        </select>
+        <input type="text" id="location" placeholder="City, Country (e.g., Kumasi, Ghana)" style="width:100%;padding:8px;margin:5px 0;"/>
+        <input type="number" id="since" placeholder="Year Started (e.g., 2020)" min="1900" max="2026" style="width:100%;padding:8px;margin:5px 0;"/>
+        <button onclick="saveProfile()" style="background:#FFD700;color:#000;border:none;padding:10px 20px;font-weight:bold;margin-top:10px;">Save Profile</button>
+      </div>
+
       <script>
         async function pay() {
           const data = {
@@ -195,6 +282,37 @@ app.get('/app', (req, res) => {
             r.innerHTML = '❌ Network error';
           }
         }
+
+        async function saveProfile() {
+          const data = {
+            businessName: document.getElementById('bname').value,
+            businessPhone: document.getElementById('bphone').value,
+            category: document.getElementById('category').value,
+            location: document.getElementById('location').value,
+            since: document.getElementById('since').value
+          };
+
+          if (!data.businessName || !data.businessPhone) {
+            alert('Please fill Business Name and Phone first');
+            return;
+          }
+
+          try {
+            const res = await fetch('/api/profile', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(data)
+            });
+            const d = await res.json();
+            if (d.success) {
+              alert('✅ Profile saved!');
+            } else {
+              alert('❌ ' + (d.error || 'Failed'));
+            }
+          } catch (e) {
+            alert('Network error');
+          }
+        }
       </script>
     </body>
     </html>
@@ -209,48 +327,99 @@ app.get('/admin', (req, res) => {
     <head><title>Admin</title></head>
     <body style="background:#000;color:#fff;padding:20px;font-family:sans-serif;">
       <h1>KS1 Empower Pay Admin</h1>
+      
+      <!-- Stats -->
       <div id="stats" style="margin:20px 0;"></div>
-      <table border="1" style="width:100%;border-collapse:collapse;margin-top:20px;">
+
+      <!-- Filters -->
+      <div style="margin:20px 0;">
+        <input type="text" id="search" placeholder="Search business/customer/phone" style="padding:8px;width:300px;"/>
+        <select id="networkFilter" style="padding:8px;margin-left:10px;">
+          <option value="">All Networks</option>
+          <option value="MTN">MTN</option>
+          <option value="Telecel">Telecel</option>
+          <option value="AirtelTogo">AirtelTogo</option>
+        </select>
+        <button onclick="loadTransactions()" style="background:#FFD700;color:#000;padding:8px;margin-left:10px;">Apply</button>
+      </div>
+
+      <!-- Transactions Table -->
+      <table border="1" style="width:100%;border-collapse:collapse;">
         <thead>
           <tr style="background:#1e3a8a;color:#FFD700;">
             <th>Date</th>
-            <th>Business</th>
+            <th>Business (Category)</th>
             <th>Customer</th>
             <th>Network</th>
             <th>Amount (GHS)</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody id="txs"></tbody>
       </table>
-      <script>
-        const pwd = prompt("Enter Business Password:");
-        if (!pwd) window.location.href = '/';
 
-        async function load() {
-          try {
-            const s = await fetch('/api/stats');
-            const stats = await s.json();
-            document.getElementById('stats').innerHTML = 
-              '<div><b>Total Transactions:</b> ' + stats.totalTransactions + '</div>' +
-              '<div><b>Total Volume:</b> GHS ' + stats.totalVolume + '</div>';
+      <script>
+        let currentPassword = '';
+
+        async function loadStats() {
+          const s = await fetch('/api/stats');
+          const stats = await s.json();
+          document.getElementById('stats').innerHTML = 
+            '<div><b>Active Businesses:</b> <span id="bizCount">—</span></div>' +
+            '<div><b>Total Transactions:</b> ' + stats.totalTransactions + '</div>' +
+            '<div><b>Total Volume:</b> GHS ' + stats.totalVolume + '</div>';
           
-            const t = await fetch('/api/transactions?password=' + encodeURIComponent(pwd));
-            const txs = await t.json();
-            document.getElementById('txs').innerHTML = txs.map(tx => 
-              '<tr style="border-bottom:1px solid #333;">' +
-                '<td>' + new Date(tx.timestamp).toLocaleString() + '</td>' +
-                '<td>' + tx.businessName + '</td>' +
-                '<td>' + tx.customerName + ' (' + tx.customerNumber + ')</td>' +
-                '<td>' + tx.network + '</td>' +
-                '<td>GHS ' + tx.amount + '</td>' +
-              '</tr>'
-            ).join('');
-          } catch (err) {
-            alert('Failed to load. Check password or network.');
-            window.location.href = '/';
+          const m = await fetch('/api/merchants?password=' + encodeURIComponent(currentPassword));
+          const merchants = await m.json();
+          document.getElementById('bizCount').textContent = merchants.length;
+        }
+
+        async function loadTransactions() {
+          const search = document.getElementById('search').value;
+          const network = document.getElementById('networkFilter').value;
+          
+          const t = await fetch('/api/transactions?password=' + encodeURIComponent(currentPassword));
+          let txs = await t.json();
+          
+          if (search) {
+            const q = search.toLowerCase();
+            txs = txs.filter(tx => 
+              tx.businessName.toLowerCase().includes(q) ||
+              tx.customerName.toLowerCase().includes(q) ||
+              tx.customerNumber.includes(q) ||
+              tx.businessPhone.includes(q)
+            );
+          }
+          if (network) {
+            txs = txs.filter(tx => tx.network === network);
+          }
+
+          document.getElementById('txs').innerHTML = txs.map(tx => 
+            \`<tr style="border-bottom:1px solid #333;">
+              <td>\${new Date(tx.timestamp).toLocaleString()}</td>
+              <td>\${tx.businessName} (\${tx.businessCategory || '—'})<br/><small>\${tx.businessLocation}</small></td>
+              <td>\${tx.customerName}<br/><small>\${tx.customerNumber}</small></td>
+              <td>\${tx.network}</td>
+              <td>GHS \${tx.amount}</td>
+              <td>
+                <button onclick="flagDispute('\${tx._id}')" style="background:red;color:white;padding:4px;font-size:12px;">Flag</button>
+              </td>
+            </tr>\`
+          ).join('');
+        }
+
+        async function flagDispute(id) {
+          if (confirm('Mark this transaction as disputed?')) {
+            alert('Dispute flagged! (Future: notify admin)');
           }
         }
-        load();
+
+        const pwd = prompt("Enter Business Password:");
+        if (!pwd) window.location.href = '/';
+        currentPassword = pwd;
+        
+        loadStats();
+        loadTransactions();
       </script>
     </body>
     </html>
