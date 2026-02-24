@@ -1,4 +1,4 @@
-// KS1 EMPOWER PAY – ALKEBULAN (AFRICA) EDITION • COMPLETE ADMIN VISIBILITY
+// KS1 EMPOWER PAY – ALKEBULAN (AFRICA) EDITION • SCROLLABLE + BIRTHDAY + ID SEARCH
 const express = require('express');
 const { MongoClient, ObjectId } = require('mongodb');
 const dns = require('dns');
@@ -34,7 +34,6 @@ async function initDB() {
   }
 }
 
-// === GENERATE TRANSACTION ID ===
 function generateId(prefix = 'KS1') {
   return `${prefix}-${Math.floor(100 + Math.random() * 900)}-${Math.floor(100 + Math.random() * 900)}`;
 }
@@ -95,11 +94,10 @@ app.post('/api/momo/request', async (req, res) => {
     return res.status(400).json({ error: 'Invalid input' });
   }
 
-  const commissionRate = 0.01; // 1%
+  const commissionRate = 0.01;
   const commission = parseFloat((amount * commissionRate).toFixed(2));
   const netToMerchant = parseFloat((amount - commission).toFixed(2));
 
-  // Get business info
   const merchant = await db.collection('merchants').findOne({ businessPhone });
   if (!merchant) {
     return res.status(404).json({ error: 'Business not found' });
@@ -125,8 +123,6 @@ app.post('/api/momo/request', async (req, res) => {
 
   try {
     await db.collection('transactions').insertOne(transaction);
-    
-    // Update merchant stats
     await db.collection('merchants').updateOne(
       { businessPhone },
       { 
@@ -134,7 +130,6 @@ app.post('/api/momo/request', async (req, res) => {
         $set: { lastSeen: new Date() }
       }
     );
-
     res.json({ 
       success: true, 
       transactionId: transaction.transactionId,
@@ -146,7 +141,7 @@ app.post('/api/momo/request', async (req, res) => {
   }
 });
 
-// === REPORT TECHNICAL ISSUE ===
+// === SUPPORT ===
 app.post('/api/support', async (req, res) => {
   const { businessPhone, issue } = req.body;
   if (!businessPhone || !issue) {
@@ -161,37 +156,13 @@ app.post('/api/support', async (req, res) => {
       resolved: false
     };
     await db.collection('support').insertOne(report);
-    res.json({ success: true, message: "Support ticket created. Admin will contact you soon." });
+    res.json({ success: true, message: "Support ticket created." });
   } catch (err) {
     res.status(500).json({ error: 'Failed to submit support request' });
   }
 });
 
-// === GET MERCHANT BY PHONE ===
-app.get('/api/merchant/:phone', async (req, res) => {
-  try {
-    const merchant = await db.collection('merchants').findOne({ businessPhone: req.params.phone });
-    if (!merchant) return res.status(404).json({ error: 'Business not found' });
-    res.json(merchant);
-  } catch (err) {
-    res.status(500).json({ error: 'Fetch failed' });
-  }
-});
-
-// === GET TRANSACTIONS FOR MERCHANT ===
-app.get('/api/transactions/:phone', async (req, res) => {
-  try {
-    const txs = await db.collection('transactions')
-      .find({ businessPhone: req.params.phone })
-      .sort({ timestamp: -1 })
-      .toArray();
-    res.json(txs);
-  } catch (err) {
-    res.status(500).json({ error: 'Fetch failed' });
-  }
-});
-
-// === ADMIN: GET ALL DATA ===
+// === ADMIN DATA ===
 app.get('/api/admin/data', async (req, res) => {
   const { password } = req.query;
   if (password !== BUSINESS_PASSWORD) {
@@ -349,19 +320,6 @@ app.get('/', (req, res) => {
             0 6px 12px rgba(212, 175, 55, 0.4);
           transition: all 0.15s ease;
         }
-        .btn-register:hover {
-          background: linear-gradient(135deg, #E6C24A, #FFE04D);
-          transform: translateY(2px);
-          box-shadow: 
-            0 2px 0 #B8860B,
-            0 4px 10px rgba(212, 175, 55, 0.35);
-        }
-        .btn-register:active {
-          transform: translateY(4px);
-          box-shadow: 
-            0 0 0 #B8860B,
-            0 2px 8px rgba(212, 175, 55, 0.3);
-        }
         .error {
           color: #f87171;
           text-align: center;
@@ -479,7 +437,7 @@ app.get('/app', (req, res) => {
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
           font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-          background: #fff;
+          background: #0c1a3a;
           color: #1e3a8a;
           line-height: 1.5;
           padding: 0 1rem;
@@ -488,9 +446,26 @@ app.get('/app', (req, res) => {
           min-height: 100vh;
           display: flex;
           flex-direction: column;
-          justify-content: center;
+          justify-content: flex-start;
           padding-top: 2vh;
           padding-bottom: 2vh;
+          position: relative;
+          overflow-x: hidden;
+        }
+        body::before {
+          content: "";
+          position: absolute;
+          top: -50%;
+          left: -50%;
+          width: 200%;
+          height: 200%;
+          background: radial-gradient(circle, rgba(212, 175, 55, 0.2) 0%, transparent 70%);
+          z-index: -1;
+          animation: rotate 25s linear infinite;
+        }
+        @keyframes rotate {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
         }
         .container {
           background: #fff;
@@ -500,6 +475,8 @@ app.get('/app', (req, res) => {
           box-shadow: 0 8px 24px rgba(212, 175, 55, 0.15);
           border: 1px solid #f0f0f0;
           width: 100%;
+          position: relative;
+          z-index: 2;
         }
         header {
           text-align: center;
@@ -590,19 +567,6 @@ app.get('/app', (req, res) => {
             0 4px 0 #B8860B,
             0 6px 12px rgba(212, 175, 55, 0.3);
           transition: all 0.15s ease;
-        }
-        .btn-momo:hover {
-          background: linear-gradient(135deg, #E6C24A, #FFE04D);
-          transform: translateY(2px);
-          box-shadow: 
-            0 2px 0 #B8860B,
-            0 4px 10px rgba(212, 175, 55, 0.25);
-        }
-        .btn-momo:active {
-          transform: translateY(4px);
-          box-shadow: 
-            0 0 0 #B8860B,
-            0 2px 8px rgba(212, 175, 55, 0.2);
         }
         #result {
           margin-top: 1rem;
@@ -778,7 +742,8 @@ app.get('/admin', (req, res) => {
           margin: 0 auto;
           min-height: 100vh;
           position: relative;
-          overflow: hidden;
+          overflow-x: hidden;
+          overflow-y: auto; /* ✅ SCROLLABLE */
         }
         body::before {
           content: "";
@@ -800,6 +765,7 @@ app.get('/admin', (req, res) => {
           border-radius: 16px;
           padding: 1.8rem;
           margin-top: 1.5rem;
+          margin-bottom: 2rem; /* ✅ Space for footer */
           box-shadow: 0 8px 24px rgba(212, 175, 55, 0.2);
           border: 1px solid rgba(212, 175, 55, 0.3);
           position: relative;
@@ -812,7 +778,7 @@ app.get('/admin', (req, res) => {
           letter-spacing: -0.5px;
           text-shadow: 0 0 10px rgba(212, 175, 55, 0.7);
           text-align: center;
-          margin-bottom: 1.6rem;
+          margin-bottom: 0.4rem;
           position: relative;
         }
         h1::after {
@@ -823,6 +789,26 @@ app.get('/admin', (req, res) => {
           transform: translateX(-50%);
           width: 70px;
           height: 4px;
+          background: linear-gradient(90deg, #D4AF37, #FFD700);
+          border-radius: 2px;
+        }
+        .dashboard-title {
+          font-size: 1.4rem;
+          font-weight: 800;
+          color: #FFD700;
+          text-align: center;
+          margin-bottom: 1.6rem;
+          text-shadow: 2px 2px 4px rgba(212, 175, 55, 0.3);
+          position: relative;
+        }
+        .dashboard-title::after {
+          content: "";
+          position: absolute;
+          bottom: -6px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 50px;
+          height: 3px;
           background: linear-gradient(90deg, #D4AF37, #FFD700);
           border-radius: 2px;
         }
@@ -885,6 +871,12 @@ app.get('/admin', (req, res) => {
           box-shadow: 0 3px 0 #B8860B;
           text-transform: uppercase;
           letter-spacing: 0.5px;
+          min-width: 100px;
+          transition: all 0.2s ease;
+        }
+        .btn-filter:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 5px 0 #B8860B, 0 8px 16px rgba(212, 175, 55, 0.3);
         }
         table {
           width: 100%;
@@ -913,9 +905,9 @@ app.get('/admin', (req, res) => {
           text-align: center;
           color: #94a3b8;
           font-size: 0.85rem;
-          padding-top: 1.8rem;
+          padding: 1.8rem 0;
           border-top: 1px solid rgba(255,255,255,0.1);
-          margin-top: 2rem;
+          margin-top: 1rem;
           position: relative;
           z-index: 2;
         }
@@ -924,6 +916,7 @@ app.get('/admin', (req, res) => {
     <body>
       <div class="container">
         <h1>KS1 Empower Pay Admin</h1>
+        <div class="dashboard-title">Dashboard</div>
         
         <div class="mission-banner">
           🌍 Every transaction fuels our mission to empower African SMEs with sovereign digital tools.
@@ -949,7 +942,7 @@ app.get('/admin', (req, res) => {
         </div>
 
         <div class="filters">
-          <input type="text" id="search" placeholder="Search business/customer/phone" />
+          <input type="text" id="search" placeholder="Search by ID, business, customer, or phone" />
           <select id="networkFilter">
             <option value="">All Networks</option>
             <option value="MTN">MTN</option>
@@ -964,7 +957,7 @@ app.get('/admin', (req, res) => {
           <thead>
             <tr>
               <th>Name</th>
-              <th>Owner</th>
+              <th>Owner (DOB)</th>
               <th>Phone</th>
               <th>Since</th>
               <th>Joined</th>
@@ -1010,6 +1003,9 @@ app.get('/admin', (req, res) => {
 
         async function loadData() {
           try {
+            const query = document.getElementById('search').value.toLowerCase();
+            const network = document.getElementById('networkFilter').value;
+
             const res = await fetch('/api/admin/data?password=' + encodeURIComponent(currentPassword));
             const data = await res.json();
 
@@ -1020,18 +1016,39 @@ app.get('/admin', (req, res) => {
             document.getElementById('totalComm').textContent = data.stats.totalCommission.toFixed(2);
 
             // Businesses
-            document.getElementById('bizBody').innerHTML = data.merchants.slice(0, 5).map(b => 
-              \`<tr>
+            const filteredBiz = data.merchants.filter(b => 
+              !query || 
+              b.businessName.toLowerCase().includes(query) ||
+              b.ownerName.toLowerCase().includes(query) ||
+              b.businessPhone.includes(query)
+            );
+            document.getElementById('bizBody').innerHTML = filteredBiz.slice(0, 5).map(b => {
+              const dob = new Date(b.ownerDob);
+              const dobStr = \`\${dob.getDate()}/\${dob.getMonth()+1}/\${dob.getFullYear()}\`;
+              return \`<tr>
                 <td>\${b.businessName}</td>
-                <td>\${b.ownerName}</td>
+                <td>\${b.ownerName} (\${dobStr})</td>
                 <td>\${b.businessPhone}</td>
                 <td>\${b.businessSince}</td>
                 <td>\${new Date(b.createdAt).toLocaleDateString()}</td>
-              </tr>\`
-            ).join('');
+              </tr>\`;
+            }).join('');
 
             // Transactions
-            document.getElementById('txBody').innerHTML = data.transactions.slice(0, 10).map(tx => 
+            let txs = data.transactions;
+            if (query) {
+              txs = txs.filter(tx => 
+                tx.transactionId.toLowerCase().includes(query) ||
+                tx.businessName.toLowerCase().includes(query) ||
+                tx.customerName.toLowerCase().includes(query) ||
+                tx.businessPhone.includes(query) ||
+                tx.customerNumber.includes(query)
+              );
+            }
+            if (network) {
+              txs = txs.filter(tx => tx.businessPhone.includes(network)); // simplified
+            }
+            document.getElementById('txBody').innerHTML = txs.slice(0, 10).map(tx => 
               \`<tr>
                 <td>\${tx.transactionId}</td>
                 <td>\${new Date(tx.timestamp).toLocaleString()}</td>
