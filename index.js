@@ -1,4 +1,4 @@
-// KS1 EMPOWER PAY – ALKEBULAN (AFRICA) EDITION • SCROLLABLE + BIRTHDAY + ID SEARCH
+// KS1 EMPOWER PAY – ALKEBULAN (AFRICA) EDITION • PASSWORD RESET + THEME + ENHANCED UI
 const express = require('express');
 const { MongoClient, ObjectId } = require('mongodb');
 const dns = require('dns');
@@ -43,7 +43,7 @@ app.post('/api/register', async (req, res) => {
   const { 
     businessName,
     ownerName,
-    ownerDob, // YYYY-MM-DD
+    ownerDob,
     businessSince,
     businessPhone,
     network = 'MTN'
@@ -66,6 +66,7 @@ app.post('/api/register', async (req, res) => {
       businessSince: parseInt(businessSince),
       businessPhone,
       network,
+      password: null, // will be set on first login or reset
       totalTransactions: 0,
       totalVolume: 0,
       active: true,
@@ -78,6 +79,88 @@ app.post('/api/register', async (req, res) => {
   } catch (err) {
     console.error("Register error:", err.message);
     res.status(500).json({ error: 'Failed to register' });
+  }
+});
+
+// === LOGIN EXISTING BUSINESS ===
+app.post('/api/login', async (req, res) => {
+  const { businessPhone, password } = req.body;
+  if (!businessPhone || !password) {
+    return res.status(400).json({ error: 'Phone and password required' });
+  }
+
+  try {
+    const merchant = await db.collection('merchants').findOne({ businessPhone });
+    if (!merchant) {
+      return res.status(404).json({ error: 'Business not found' });
+    }
+
+    // If no password set, use default
+    const expectedPass = merchant.password || BUSINESS_PASSWORD;
+    if (password !== expectedPass) {
+      return res.status(401).json({ error: 'Invalid password' });
+    }
+
+    res.json({ success: true, businessPhone });
+  } catch (err) {
+    res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+// === REQUEST PASSWORD RESET (ADMIN) ===
+app.post('/api/reset-request', async (req, res) => {
+  const { password, businessPhone } = req.body;
+  if (password !== BUSINESS_PASSWORD) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  try {
+    const merchant = await db.collection('merchants').findOne({ businessPhone });
+    if (!merchant) {
+      return res.status(404).json({ error: 'Business not found' });
+    }
+
+    const resetCode = generateId('KS1');
+    await db.collection('merchants').updateOne(
+      { businessPhone },
+      { $set: { resetCode, resetExpiry: new Date(Date.now() + 30 * 60000) } } // 30 mins
+    );
+
+    res.json({ success: true, resetCode });
+  } catch (err) {
+    res.status(500).json({ error: 'Reset request failed' });
+  }
+});
+
+// === RESET PASSWORD ===
+app.post('/api/reset-password', async (req, res) => {
+  const { businessPhone, resetCode, newPassword } = req.body;
+  if (!businessPhone || !resetCode || !newPassword) {
+    return res.status(400).json({ error: 'All fields required' });
+  }
+
+  try {
+    const merchant = await db.collection('merchants').findOne({ 
+      businessPhone,
+      resetCode,
+      resetExpiry: { $gt: new Date() }
+    });
+
+    if (!merchant) {
+      return res.status(400).json({ error: 'Invalid or expired reset code' });
+    }
+
+    await db.collection('merchants').updateOne(
+      { businessPhone },
+      { 
+        $set: { password: newPassword },
+        $unset: { resetCode: "", resetExpiry: "" }
+      }
+    );
+
+    res.json({ success: true, message: "Password updated" });
+  } catch (err) {
+    res.status(500).json({ error: 'Password reset failed' });
   }
 });
 
@@ -303,7 +386,18 @@ app.get('/', (req, res) => {
           box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.3);
           outline: none;
         }
-        .btn-register {
+        .password-toggle {
+          position: absolute;
+          right: 1rem;
+          top: 50%;
+          transform: translateY(-50%);
+          background: none;
+          border: none;
+          color: #aaa;
+          cursor: pointer;
+          font-size: 1.2rem;
+        }
+        .btn-action {
           background: linear-gradient(135deg, #D4AF37, #FFD700);
           color: #0c1a3a;
           font-weight: 800;
@@ -319,6 +413,20 @@ app.get('/', (req, res) => {
             0 4px 0 #B8860B,
             0 6px 12px rgba(212, 175, 55, 0.4);
           transition: all 0.15s ease;
+          margin-top: 0.5rem;
+        }
+        .btn-action:hover {
+          background: linear-gradient(135deg, #E6C24A, #FFE04D);
+          transform: translateY(2px);
+          box-shadow: 
+            0 2px 0 #B8860B,
+            0 4px 10px rgba(212, 175, 55, 0.35);
+        }
+        .btn-action:active {
+          transform: translateY(4px);
+          box-shadow: 
+            0 0 0 #B8860B,
+            0 2px 8px rgba(212, 175, 55, 0.3);
         }
         .error {
           color: #f87171;
@@ -326,6 +434,11 @@ app.get('/', (req, res) => {
           margin-top: 0.8rem;
           font-size: 0.85rem;
           min-height: 1.2rem;
+        }
+        .section {
+          margin: 1.5rem 0;
+          padding-top: 1.5rem;
+          border-top: 1px solid rgba(212, 175, 55, 0.2);
         }
         .footer {
           text-align: center;
@@ -346,8 +459,9 @@ app.get('/', (req, res) => {
     <body>
       <div class="login-card">
         <h1>KS1 Empower Pay</h1>
+        
+        <!-- Register -->
         <p class="subtitle">Register Your Business</p>
-
         <div class="form-group">
           <input type="text" id="bname" placeholder="Business Name" />
         </div>
@@ -370,7 +484,42 @@ app.get('/', (req, res) => {
             <option value="AirtelTogo">AirtelTogo</option>
           </select>
         </div>
-        <button class="btn-register" onclick="register()">Register Business</button>
+        <button class="btn-action" onclick="register()">Register Business</button>
+
+        <!-- Login -->
+        <div class="section">
+          <p class="subtitle">Already Registered? Login</p>
+          <div class="form-group">
+            <input type="text" id="loginPhone" placeholder="Business Phone (+233...)" />
+          </div>
+          <div class="form-group">
+            <input type="password" id="loginPass" placeholder="Password" />
+            <button class="password-toggle" onclick="togglePassword('loginPass')">👁️</button>
+          </div>
+          <button class="btn-action" onclick="login()">Login</button>
+        </div>
+
+        <!-- Forgot Password -->
+        <div class="section">
+          <p class="subtitle">Forgot Password?</p>
+          <div class="form-group">
+            <input type="text" id="resetPhone" placeholder="Business Phone (+233...)" />
+          </div>
+          <div class="form-group">
+            <input type="text" id="resetCode" placeholder="Reset Code (KS1-888-999)" />
+          </div>
+          <div class="form-group">
+            <input type="password" id="newPass" placeholder="New Password" />
+            <button class="password-toggle" onclick="togglePassword('newPass')">👁️</button>
+          </div>
+          <button class="btn-action" onclick="resetPassword()">Reset Password</button>
+        </div>
+
+        <!-- Support -->
+        <div class="section">
+          <button class="btn-action" onclick="reportIssue()">🛠️ Contact Support</button>
+        </div>
+
         <div id="error" class="error"></div>
       </div>
 
@@ -380,6 +529,18 @@ app.get('/', (req, res) => {
       </div>
 
       <script>
+        function togglePassword(id) {
+          const input = document.getElementById(id);
+          const btn = input.nextElementSibling;
+          if (input.type === 'password') {
+            input.type = 'text';
+            btn.textContent = '🔒';
+          } else {
+            input.type = 'password';
+            btn.textContent = '👁️';
+          }
+        }
+
         async function register() {
           const data = {
             businessName: document.getElementById('bname').value,
@@ -416,6 +577,83 @@ app.get('/', (req, res) => {
             }
           } catch (e) {
             errorEl.textContent = 'Network error';
+          }
+        }
+
+        async function login() {
+          const phone = document.getElementById('loginPhone').value;
+          const pass = document.getElementById('loginPass').value;
+          const errorEl = document.getElementById('error');
+
+          if (!phone || !pass) {
+            errorEl.textContent = 'Enter phone and password';
+            return;
+          }
+
+          try {
+            const res = await fetch('/api/login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ businessPhone: phone, password: pass })
+            });
+            const d = await res.json();
+            if (d.success) {
+              localStorage.setItem('businessPhone', phone);
+              window.location.href = '/app';
+            } else {
+              errorEl.textContent = d.error || 'Login failed';
+            }
+          } catch (e) {
+            errorEl.textContent = 'Network error';
+          }
+        }
+
+        async function resetPassword() {
+          const phone = document.getElementById('resetPhone').value;
+          const code = document.getElementById('resetCode').value;
+          const newPass = document.getElementById('newPass').value;
+          const errorEl = document.getElementById('error');
+
+          if (!phone || !code || !newPass) {
+            errorEl.textContent = 'Fill all reset fields';
+            return;
+          }
+
+          try {
+            const res = await fetch('/api/reset-password', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ businessPhone: phone, resetCode: code, newPassword: newPass })
+            });
+            const d = await res.json();
+            if (d.success) {
+              alert('Password updated! Logging in...');
+              localStorage.setItem('businessPhone', phone);
+              window.location.href = '/app';
+            } else {
+              errorEl.textContent = d.error || 'Reset failed';
+            }
+          } catch (e) {
+            errorEl.textContent = 'Network error';
+          }
+        }
+
+        async function reportIssue() {
+          const issue = prompt("Describe your technical issue:");
+          if (!issue) return;
+
+          // Use a dummy phone for landing page support
+          const phone = '+233000000000';
+          try {
+            const res = await fetch('/api/support', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ businessPhone: phone, issue })
+            });
+            const d = await res.json();
+            alert(d.message || 'Support request sent!');
+          } catch (e) {
+            alert('Failed to send support request');
           }
         }
       </script>
@@ -589,12 +827,15 @@ app.get('/app', (req, res) => {
           font-size: 14px;
           text-align: center;
         }
-        .support-link {
+        .theme-toggle {
           display: block;
-          text-align: center;
-          margin-top: 15px;
-          color: #ef4444;
-          text-decoration: underline;
+          margin: 15px auto;
+          background: #e0e7ff;
+          color: #4f46e5;
+          border: 1px solid #c7d2fe;
+          font-weight: 600;
+          padding: 0.6rem;
+          border-radius: 8px;
           cursor: pointer;
         }
         .footer {
@@ -635,8 +876,9 @@ app.get('/app', (req, res) => {
             Pay & Empower Alkebulan (AFRICA)
           </button>
           <div id="result"></div>
-          <div class="support-link" onclick="reportIssue()">Having technical issues? Contact Support</div>
         </div>
+
+        <button class="theme-toggle" onclick="toggleTheme()">🌓 Toggle Light/Dark Theme</button>
       </div>
 
       <div class="footer">
@@ -647,8 +889,23 @@ app.get('/app', (req, res) => {
       <script>
         let businessPhone = localStorage.getItem('businessPhone');
         if (!businessPhone) {
-          alert('Please register first');
+          alert('Please log in first');
           window.location.href = '/';
+        }
+
+        // Theme toggle
+        function toggleTheme() {
+          const isDark = document.body.classList.contains('dark-mode');
+          if (isDark) {
+            document.body.classList.remove('dark-mode');
+            document.querySelector('.container').style.background = '#fff';
+            document.querySelector('.card').style.background = '#fafafa';
+          } else {
+            document.body.classList.add('dark-mode');
+            document.querySelector('.container').style.background = '#1e293b';
+            document.querySelector('.card').style.background = '#334155';
+            document.body.style.color = '#e2e8f0';
+          }
         }
 
         async function pay() {
@@ -698,23 +955,6 @@ app.get('/app', (req, res) => {
             r.innerHTML = '❌ Network error';
           }
         }
-
-        async function reportIssue() {
-          const issue = prompt("Describe your technical issue:");
-          if (!issue) return;
-
-          try {
-            const res = await fetch('/api/support', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ businessPhone, issue })
-            });
-            const d = await res.json();
-            alert(d.message || 'Support request sent!');
-          } catch (e) {
-            alert('Failed to send support request');
-          }
-        }
       </script>
     </body>
     </html>
@@ -743,7 +983,7 @@ app.get('/admin', (req, res) => {
           min-height: 100vh;
           position: relative;
           overflow-x: hidden;
-          overflow-y: auto; /* ✅ SCROLLABLE */
+          overflow-y: auto;
         }
         body::before {
           content: "";
@@ -765,7 +1005,7 @@ app.get('/admin', (req, res) => {
           border-radius: 16px;
           padding: 1.8rem;
           margin-top: 1.5rem;
-          margin-bottom: 2rem; /* ✅ Space for footer */
+          margin-bottom: 2rem;
           box-shadow: 0 8px 24px rgba(212, 175, 55, 0.2);
           border: 1px solid rgba(212, 175, 55, 0.3);
           position: relative;
@@ -899,7 +1139,20 @@ app.get('/admin', (req, res) => {
         .section-title {
           color: #FFD700;
           margin: 1.5rem 0 0.8rem;
-          font-size: 1.2rem;
+          font-size: 1.3rem;
+          font-weight: 800;
+          text-shadow: 2px 2px 4px rgba(212, 175, 55, 0.3);
+          position: relative;
+        }
+        .section-title::after {
+          content: "";
+          position: absolute;
+          bottom: -4px;
+          left: 0;
+          width: 40px;
+          height: 2px;
+          background: linear-gradient(90deg, #D4AF37, #FFD700);
+          border-radius: 1px;
         }
         .footer {
           text-align: center;
@@ -1009,13 +1262,11 @@ app.get('/admin', (req, res) => {
             const res = await fetch('/api/admin/data?password=' + encodeURIComponent(currentPassword));
             const data = await res.json();
 
-            // Stats
             document.getElementById('totalBiz').textContent = data.stats.totalMerchants;
             document.getElementById('totalTx').textContent = data.stats.totalTransactions;
             document.getElementById('totalVol').textContent = data.stats.totalVolume.toFixed(2);
             document.getElementById('totalComm').textContent = data.stats.totalCommission.toFixed(2);
 
-            // Businesses
             const filteredBiz = data.merchants.filter(b => 
               !query || 
               b.businessName.toLowerCase().includes(query) ||
@@ -1034,7 +1285,6 @@ app.get('/admin', (req, res) => {
               </tr>\`;
             }).join('');
 
-            // Transactions
             let txs = data.transactions;
             if (query) {
               txs = txs.filter(tx => 
@@ -1044,9 +1294,6 @@ app.get('/admin', (req, res) => {
                 tx.businessPhone.includes(query) ||
                 tx.customerNumber.includes(query)
               );
-            }
-            if (network) {
-              txs = txs.filter(tx => tx.businessPhone.includes(network)); // simplified
             }
             document.getElementById('txBody').innerHTML = txs.slice(0, 10).map(tx => 
               \`<tr>
@@ -1059,7 +1306,6 @@ app.get('/admin', (req, res) => {
               </tr>\`
             ).join('');
 
-            // Support
             document.getElementById('supportBody').innerHTML = data.supportTickets.map(t => 
               \`<tr>
                 <td>\${t.businessPhone}</td>
