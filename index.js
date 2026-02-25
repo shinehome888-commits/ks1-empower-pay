@@ -510,9 +510,10 @@ app.get('/', (req, res) => {
             <option value="AirtelTogo">AirtelTogo</option>
           </select>
         </div>
-        <!-- ✅ PASSWORD FIELD ADDED -->
+        <!-- ✅ PASSWORD WITH EYE TOGGLE -->
         <div class="form-group">
           <input type="password" id="regPass" placeholder="Create Password" />
+          <button class="password-toggle" onclick="togglePassword('regPass')">👁️</button>
         </div>
         <button class="btn-action" onclick="register()">Register Business</button>
 
@@ -925,32 +926,73 @@ app.get('/app', (req, res) => {
           <div id="result"></div>
         </div>
 
-        <!-- ✅ MY TRANSACTION LEDGER BUTTON -->
-        <button class="btn-momo" onclick="viewLedger()" style="margin-top:1rem;background:linear-gradient(135deg, #4f46e5, #7c3aed);">
+        <!-- ✅ MY TRANSACTION LEDGER BUTTON — YELLOW GOLD, 3D -->
+        <button class="btn-momo" onclick="viewLedger()" style="
+          margin-top: 1.2rem;
+          background: linear-gradient(135deg, #D4AF37, #FFD700);
+          color: #0c1a3a;
+          font-weight: 800;
+          box-shadow: 0 4px 0 #B8860B, 0 6px 12px rgba(212, 175, 55, 0.4);
+        ">
           📖 My Transaction Ledger
         </button>
 
         <button class="theme-toggle" onclick="toggleTheme()">🌓 Light/Dark</button>
       </div>
 
-      <!-- LEDGER MODAL -->
-      <div id="ledgerModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:1000;">
-        <div style="background:white;margin:2rem auto;padding:2rem;border-radius:16px;width:90%;max-width:800px;max-height:80vh;overflow-y:auto;">
-          <h2 style="color:#1e3a8a;text-align:center;margin-bottom:1.5rem;">My Transaction Ledger</h2>
-          <table style="width:100%;border-collapse:collapse;">
+      <!-- ✅ LEDGER MODAL — PROFESSIONAL, WOW-INDUCING -->
+      <div id="ledgerModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.88);z-index:1000;">
+        <div style="
+          background: rgba(12, 26, 58, 0.96);
+          margin: 1.5rem auto;
+          padding: 2rem;
+          border-radius: 16px;
+          width: 92%;
+          max-width: 850px;
+          max-height: 85vh;
+          overflow-y: auto;
+          border: 1px solid rgba(255, 215, 0, 0.2);
+          box-shadow: 0 12px 40px rgba(255, 215, 0, 0.15);
+        ">
+          <!-- ✅ BOLD + 3D TITLE -->
+          <h2 style="
+            color: #FFD700;
+            text-align: center;
+            margin-bottom: 1.8rem;
+            font-size: 1.8rem;
+            font-weight: 900;
+            text-shadow: 0 2px 0 #B8860B, 0 4px 8px rgba(212, 175, 55, 0.5);
+            letter-spacing: -0.5px;
+          ">My Transaction Ledger</h2>
+
+          <table style="width:100%;border-collapse:collapse;margin-top:0.8rem;background:rgba(0,0,0,0.2);border-radius:10px;overflow:hidden;">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Date</th>
-                <th>Customer</th>
-                <th>Amount (GHS)</th>
-                <th>Commission (GHS)</th>
-                <th>Status</th>
+                <th style="color:#FFD700;font-weight:800;font-size:0.92rem;background:rgba(212,175,55,0.1);padding:0.85rem 0.6rem;text-align:left;">ID</th>
+                <th style="color:#FFD700;font-weight:800;font-size:0.92rem;background:rgba(212,175,55,0.1);padding:0.85rem 0.6rem;text-align:left;">Date</th>
+                <th style="color:#FFD700;font-weight:800;font-size:0.92rem;background:rgba(212,175,55,0.1);padding:0.85rem 0.6rem;text-align:left;">Customer</th>
+                <th style="color:#FFD700;font-weight:800;font-size:0.92rem;background:rgba(212,175,55,0.1);padding:0.85rem 0.6rem;text-align:left;">Amount (GHS)</th>
+                <th style="color:#FFD700;font-weight:800;font-size:0.92rem;background:rgba(212,175,55,0.1);padding:0.85rem 0.6rem;text-align:left;">Commission (GHS)</th>
+                <th style="color:#FFD700;font-weight:800;font-size:0.92rem;background:rgba(212,175,55,0.1);padding:0.85rem 0.6rem;text-align:left;">Status</th>
               </tr>
             </thead>
-            <tbody id="ledgerBody"></tbody>
+            <tbody id="ledgerBody" style="color:#e2e8f0;"></tbody>
           </table>
-          <button onclick="closeLedger()" style="margin-top:1rem;background:linear-gradient(135deg, #D4AF37, #FFD700);color:#0c1a3a;border:none;padding:0.7rem 1.2rem;border-radius:8px;">Close</button>
+
+          <button onclick="closeLedger()" style="
+            margin-top: 1.5rem;
+            background: linear-gradient(135deg, #D4AF37, #FFD700);
+            color: #0c1a3a;
+            font-weight: 700;
+            border: none;
+            border-radius: 8px;
+            padding: 0.7rem 1.2rem;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #B8860B;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.2s ease;
+          ">CloseOperation</button>
         </div>
       </div>
 
@@ -1053,14 +1095,17 @@ app.get('/app', (req, res) => {
             });
             const transactions = await res.json();
             
+            // ✅ Enhanced ledger rows — clean, professional
             document.getElementById('ledgerBody').innerHTML = transactions.map(tx => 
-              \`<tr>
-                <td><code>\${tx.transactionId}</code></td>
-                <td>\${new Date(tx.timestamp).toLocaleString()}</td>
-                <td>\${tx.customerName} (\${tx.customerNumber})</td>
-                <td>₵\${tx.amount.toFixed(2)}</td>
-                <td>₵\${tx.commission.toFixed(2)}</td>
-                <td><span style="background:#10b981;color:white;padding:2px 6px;border-radius:4px;">\${tx.status}</span></td>
+              \`<tr style="border-bottom:1px solid rgba(255,255,255,0.08);">
+                <td style="padding:0.85rem 0.6rem;"><code style="font-family:monospace;color:#FFD700;">\${tx.transactionId}</code></td>
+                <td style="padding:0.85rem 0.6rem;">\${new Date(tx.timestamp).toLocaleString()}</td>
+                <td style="padding:0.85rem 0.6rem;">\${tx.customerName}<br/><small style="color:#94a3b8;">\${tx.customerNumber}</small></td>
+                <td style="padding:0.85rem 0.6rem;">₵\${tx.amount.toFixed(2)}</td>
+                <td style="padding:0.85rem 0.6rem;">₵\${tx.commission.toFixed(2)}</td>
+                <td style="padding:0.85rem 0.6rem;">
+                  <span style="background:#10b981;color:white;padding:4px 8px;border-radius:6px;font-size:0.85em;font-weight:600;">\${tx.status}</span>
+                </td>
               </tr>\`
             ).join('');
             
