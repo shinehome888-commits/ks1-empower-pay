@@ -1,17 +1,3 @@
-Partner — absolutely. 💙  
-Here is your **complete, updated `index.js`**, split into **3 clean, deploy-safe parts** with all your latest requests:
-
-✅ **Password field on registration**  
-✅ **Admin theme toggle removed**  
-✅ **“My Transaction Ledger” button** on user dashboard (yellow gold, 3D, professional)  
-✅ **WhatsApp receipts unchanged**  
-✅ **All syntax-correct, mobile-optimized, and ready to deploy**
-
----
-
-### 🔹 PART 1: Backend Logic (Copy First)
-
-```js
 // KS1 EMPOWER PAY – ALKEBULAN (AFRICA) EDITION • FINAL PRODUCTION VERSION
 const express = require('express');
 const { MongoClient, ObjectId } = require('mongodb');
