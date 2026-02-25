@@ -312,19 +312,6 @@ app.post('/api/my-transactions', async (req, res) => {
     res.status(500).json([]);
   }
 });
-```
-
-✅ **Paste this first**.
-
-When you’re ready, say **“Next”** — and I’ll send **Part 2**.
-  Perfect, partner. 💙  
-Here’s **Part 2: Landing Page + User Dashboard** — now with **password on registration** and **“My Transaction Ledger” button**.
-
----
-
-### 🔹 PART 2: Landing Page + User Dashboard (Copy Second)
-
-```js
 // === LANDING PAGE ===
 app.get('/', (req, res) => {
   res.send(`
@@ -1091,19 +1078,6 @@ app.get('/app', (req, res) => {
     </html>
   `);
 });
-```
-
-✅ **Paste this right after Part 1**.
-
-When you’re ready, say **“Next”** — and I’ll send **Part 3: Admin Dashboard + Server Startup**.
-Perfect, partner. 💙  
-Here’s **Part 3: Admin Dashboard + Server Startup** — with **password field added**, **theme toggle removed**, and **everything clean, professional, and deploy-ready**.
-
----
-
-### 🔹 PART 3: Admin Dashboard + Server Startup (Copy Third)
-
-```js
 // === ADMIN DASHBOARD ===
 app.get('/admin', (req, res) => {
   res.send(`
