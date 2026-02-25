@@ -997,8 +997,7 @@ app.get('/app', (req, res) => {
     </body>
     </html>
   `);
-});
-// === ADMIN DASHBOARD ===
+});// === ADMIN DASHBOARD ===
 app.get('/admin', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -1022,6 +1021,7 @@ app.get('/admin', (req, res) => {
           overflow-x: hidden;
           overflow-y: auto;
         }
+        /* 🔸 WHITE LIGHT ROTATION — BOLD & GLOWING */
         body::before {
           content: "";
           position: absolute;
@@ -1029,22 +1029,22 @@ app.get('/admin', (req, res) => {
           left: -50%;
           width: 200%;
           height: 200%;
-          background: radial-gradient(circle, rgba(212, 175, 55, 0.08) 0%, transparent 70%);
+          background: radial-gradient(circle, rgba(255, 255, 255, 0.12) 0%, transparent 70%);
           z-index: -1;
-          animation: rotate 25s linear infinite;
+          animation: rotate 22s linear infinite;
         }
         @keyframes rotate {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
         }
         .container {
-          background: rgba(12, 26, 58, 0.9);
+          background: rgba(12, 26, 58, 0.92);
           border-radius: 16px;
           padding: 1.8rem;
           margin-top: 1.5rem;
           margin-bottom: 2rem;
-          box-shadow: 0 8px 24px rgba(212, 175, 55, 0.2);
-          border: 1px solid rgba(212, 175, 55, 0.3);
+          box-shadow: 0 8px 32px rgba(255, 255, 255, 0.08);
+          border: 1px solid rgba(255, 255, 255, 0.1);
           position: relative;
           z-index: 2;
           text-align: center;
@@ -1054,7 +1054,7 @@ app.get('/admin', (req, res) => {
           font-weight: 900;
           color: #FFD700;
           letter-spacing: -0.5px;
-          text-shadow: 0 0 10px rgba(212, 175, 55, 0.7);
+          text-shadow: 0 0 12px rgba(255, 215, 0, 0.6);
           margin-bottom: 0.4rem;
           position: relative;
         }
@@ -1074,7 +1074,7 @@ app.get('/admin', (req, res) => {
           font-weight: 800;
           color: #FFD700;
           margin-bottom: 1.6rem;
-          text-shadow: 2px 2px 4px rgba(212, 175, 55, 0.3);
+          text-shadow: 2px 2px 6px rgba(255, 215, 0, 0.4);
           position: relative;
         }
         .dashboard-title::after {
@@ -1096,6 +1096,7 @@ app.get('/admin', (req, res) => {
           margin-bottom: 20px;
           text-align: center;
           font-weight: 600;
+          box-shadow: 0 4px 12px rgba(30, 58, 138, 0.3);
         }
         .stats {
           display: grid;
@@ -1104,11 +1105,11 @@ app.get('/admin', (req, res) => {
           margin-bottom: 1.6rem;
         }
         .stat-card {
-          background: rgba(0,0,0,0.2);
+          background: rgba(0,0,0,0.25);
           padding: 1.2rem;
           border-radius: 12px;
           text-align: center;
-          border: 1px solid rgba(212, 175, 55, 0.2);
+          border: 1px solid rgba(255, 255, 255, 0.1);
         }
         .stat-label {
           color: #cbd5e1;
@@ -1145,7 +1146,7 @@ app.get('/admin', (req, res) => {
           border-radius: 8px;
           padding: 0.7rem 1.2rem;
           cursor: pointer;
-          box-shadow: 0 3px 0 #B8860B;
+          box-shadow: 0 4px 0 #B8860B;
           text-transform: uppercase;
           letter-spacing: 0.5px;
           min-width: 100px;
@@ -1154,7 +1155,7 @@ app.get('/admin', (req, res) => {
         .btn-filter:hover, .btn-generate:hover, .btn-view-all:hover, .theme-toggle:hover {
           background: linear-gradient(135deg, #E6C24A, #FFE04D);
           transform: translateY(-2px);
-          box-shadow: 0 5px 0 #B8860B, 0 8px 16px rgba(212, 175, 55, 0.3);
+          box-shadow: 0 6px 0 #B8860B, 0 8px 20px rgba(212, 175, 55, 0.4);
         }
 
         /* Modal */
@@ -1166,29 +1167,46 @@ app.get('/admin', (req, res) => {
           top: 0;
           width: 100%;
           height: 100%;
-          background-color: rgba(0,0,0,0.85);
+          background-color: rgba(0,0,0,0.88);
         }
         .modal-content {
-          background: rgba(12, 26, 58, 0.95);
-          margin: 2rem auto;
+          background: rgba(12, 26, 58, 0.96);
+          margin: 1.5rem auto;
           padding: 2rem;
           border-radius: 16px;
-          width: 90%;
-          max-width: 800px;
-          max-height: 80vh;
+          width: 92%;
+          max-width: 900px;
+          max-height: 85vh;
           overflow-y: auto;
-          border: 1px solid rgba(212, 175, 55, 0.3);
+          border: 1px solid rgba(255, 215, 0, 0.2);
+          box-shadow: 0 12px 40px rgba(255, 215, 0, 0.15);
         }
         .close {
           color: #FFD700;
           float: right;
-          font-size: 1.5rem;
+          font-size: 1.8rem;
           font-weight: bold;
           cursor: pointer;
+          text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+        }
+        .close:hover {
+          color: #ffffff;
+        }
+        /* 🔸 FULL DASHBOARD TITLE — BOLD + 3D */
+        .modal h2 {
+          color: #FFD700;
+          text-align: center;
+          margin-bottom: 1.8rem;
+          font-size: 1.8rem;
+          font-weight: 900;
+          text-shadow: 
+            0 2px 0 #B8860B,
+            0 4px 8px rgba(212, 175, 55, 0.5);
+          letter-spacing: -0.5px;
         }
         .section-title {
           color: #FFD700;
-          margin: 1.5rem 0 0.8rem;
+          margin: 1.8rem 0 1rem;
           font-size: 1.3rem;
           font-weight: 800;
           text-shadow: 2px 2px 4px rgba(212, 175, 55, 0.3);
@@ -1207,29 +1225,36 @@ app.get('/admin', (req, res) => {
         table {
           width: 100%;
           border-collapse: collapse;
-          margin-top: 1rem;
+          margin-top: 0.8rem;
+          background: rgba(0,0,0,0.2);
+          border-radius: 10px;
+          overflow: hidden;
         }
         th, td {
-          padding: 0.9rem 0.6rem;
+          padding: 0.85rem 0.6rem;
           text-align: left;
-          border-bottom: 1px solid rgba(255,255,255,0.1);
+          border-bottom: 1px solid rgba(255,255,255,0.08);
         }
         th {
           color: #FFD700;
           font-weight: 800;
-          font-size: 0.95rem;
+          font-size: 0.92rem;
+          background: rgba(212, 175, 55, 0.1);
+          position: sticky;
+          top: 0;
         }
         tr:hover {
-          background: rgba(212, 175, 55, 0.1);
+          background: rgba(212, 175, 55, 0.08);
         }
         #resetResult {
-          background: rgba(212, 175, 55, 0.1);
+          background: rgba(212, 175, 55, 0.12);
           padding: 12px;
           border-radius: 8px;
           color: #FFD700;
           font-weight: bold;
           display: none;
           margin-top: 10px;
+          border-left: 3px solid #FFD700;
         }
         .footer {
           text-align: center;
@@ -1247,7 +1272,7 @@ app.get('/admin', (req, res) => {
             width: 100%;
             min-width: auto;
           }
-          table { font-size: 0.85rem; }
+          table { font-size: 0.82rem; }
           th, td { padding: 0.6rem 0.3rem; }
         }
       </style>
@@ -1309,7 +1334,7 @@ app.get('/admin', (req, res) => {
       <div id="dashboardModal" class="modal">
         <div class="modal-content">
           <span class="close" onclick="closeModal()">&times;</span>
-          <h2 style="color:#FFD700;text-align:center;margin-bottom:1.5rem;">Full Admin Dashboard</h2>
+          <h2>Full Admin Dashboard</h2>
 
           <div class="section-title">🆕 New Businesses</div>
           <table id="bizTable">
@@ -1318,6 +1343,7 @@ app.get('/admin', (req, res) => {
                 <th>Name</th>
                 <th>Owner (DOB)</th>
                 <th>Phone</th>
+                <th>Network</th>
                 <th>Since</th>
                 <th>Joined</th>
               </tr>
@@ -1332,6 +1358,7 @@ app.get('/admin', (req, res) => {
                 <th>ID</th>
                 <th>Date</th>
                 <th>Business</th>
+                <th>Network</th>
                 <th>Customer</th>
                 <th>Amount (GHS)</th>
                 <th>Commission (GHS)</th>
@@ -1355,7 +1382,8 @@ app.get('/admin', (req, res) => {
       </div>
 
       <div class="footer">
-        © 2026 KS1 Empower Pay – A nonprofit project by KS1 Empire Group & Foundation (KS1EGF)
+        © 2026 KS1 Empower Pay – A nonprofit project by KS1 Empire Group & Foundation (KS1EGF)<br/>
+        <span>Built for Alkebulan (Africa) SMEs, Businesses, And Entrepreneurs — united in digital sovereignty and shared prosperity.</span>
       </div>
 
       <script>
@@ -1376,19 +1404,21 @@ app.get('/admin', (req, res) => {
         });
         resetTimer();
 
-        // Theme toggle
+        // ✅ FIXED THEME TOGGLE — WORKS FOR MAIN + MODAL
         function toggleTheme() {
           const isBlue = document.body.style.background.includes('#0c1a3a');
           if (isBlue) {
             document.body.style.background = '#fff';
             document.body.style.color = '#1e3a8a';
-            document.querySelector('.container').style.background = 'rgba(255,255,255,0.9)';
-            document.querySelector('.modal-content').style.background = 'rgba(255,255,255,0.95)';
+            document.querySelector('.container').style.background = 'rgba(255,255,255,0.95)';
+            document.querySelector('.modal-content').style.background = 'rgba(255,255,255,0.98)';
+            document.querySelector('.modal-content').style.color = '#1e3a8a';
           } else {
             document.body.style.background = '#0c1a3a';
             document.body.style.color = '#fff';
-            document.querySelector('.container').style.background = 'rgba(12, 26, 58, 0.9)';
-            document.querySelector('.modal-content').style.background = 'rgba(12, 26, 58, 0.95)';
+            document.querySelector('.container').style.background = 'rgba(12, 26, 58, 0.92)';
+            document.querySelector('.modal-content').style.background = 'rgba(12, 26, 58, 0.96)';
+            document.querySelector('.modal-content').style.color = '#fff';
           }
         }
 
@@ -1415,35 +1445,39 @@ app.get('/admin', (req, res) => {
             const res = await fetch('/api/admin/data?password=' + encodeURIComponent(currentPassword));
             const data = await res.json();
             
-            // Businesses
+            // ✅ ADD NETWORK TO BUSINESSES
             document.getElementById('bizBody').innerHTML = data.merchants.slice(0, 20).map(b => {
               const dob = new Date(b.ownerDob);
               const dobStr = \`\${dob.getDate()}/\${dob.getMonth()+1}/\${dob.getFullYear()}\`;
               return \`<tr>
-                <td>\${b.businessName}</td>
-                <td>\${b.ownerName} (\${dobStr})</td>
+                <td><strong>\${b.businessName}</strong></td>
+                <td>\${b.ownerName} (<small>\${dobStr}</small>)</td>
                 <td>\${b.businessPhone}</td>
+                <td><span style="background:#3b82f6;padding:2px 6px;border-radius:4px;color:white;font-size:0.85em;">\${b.network || '—'}</span></td>
                 <td>\${b.businessSince}</td>
                 <td>\${new Date(b.createdAt).toLocaleDateString()}</td>
               </tr>\`;
             }).join('');
 
-            // Transactions
-            document.getElementById('txBody').innerHTML = data.transactions.slice(0, 30).map(tx => 
-              \`<tr>
-                <td>\${tx.transactionId}</td>
+            // ✅ ADD NETWORK TO TRANSACTIONS
+            document.getElementById('txBody').innerHTML = data.transactions.slice(0, 30).map(tx => {
+              // Find network from merchant data
+              const merchant = data.merchants.find(m => m.businessPhone === tx.businessPhone);
+              const network = merchant ? merchant.network : '—';
+              return \`<tr>
+                <td><code>\${tx.transactionId}</code></td>
                 <td>\${new Date(tx.timestamp).toLocaleString()}</td>
-                <td>\${tx.businessName} (\${tx.businessPhone})</td>
+                <td><strong>\${tx.businessName}</strong><br/><small>\${tx.businessPhone}</small></td>
+                <td><span style="background:#3b82f6;padding:2px 6px;border-radius:4px;color:white;font-size:0.85em;">\${network}</span></td>
                 <td>\${tx.customerName}</td>
-                <td>\${tx.amount}</td>
-                <td>\${tx.commission}</td>
-              </tr>\`
-            ).join('');
+                <td>₵\${tx.amount.toFixed(2)}</td>
+                <td>₵\${tx.commission.toFixed(2)}</td>
+              </tr>\`;
+            }).join('');
 
-            // Support
             document.getElementById('supportBody').innerHTML = data.supportTickets.map(t => 
               \`<tr>
-                <td>\${t.businessName} (\${t.ownerName})<br/><small>\${t.businessPhone}</small></td>
+                <td><strong>\${t.businessName}</strong> (\${t.ownerName})<br/><small>\${t.businessPhone}</small></td>
                 <td>\${t.issue}</td>
                 <td>\${new Date(t.reportedAt).toLocaleString()}</td>
               </tr>\`
