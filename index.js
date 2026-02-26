@@ -28,6 +28,13 @@ async function initDB() {
     await client.connect();
     db = client.db('ks1empowerpay');
     console.log("✅ MongoDB connected");
+
+    // Ensure pulse collection exists (capped = auto-rotate)
+    try {
+      await db.createCollection('pulse', { capped: true, size: 50000, max: 20 });
+    } catch (e) {
+      // Already exists — safe to ignore
+    }
   } catch (err) {
     console.error("❌ MongoDB error:", err.message);
     process.exit(1);
@@ -35,18 +42,44 @@ async function initDB() {
 }
 
 function generateId(prefix = 'KS1') {
-  return prefix + '-' + Math.floor(100 + Math.random() * 900) + '-' + Math.floor(100 + Math.random() * 900);
+  return `${prefix}-${Math.floor(100 + Math.random() * 900)}-${Math.floor(100 + Math.random() * 900)}`;
+}
+
+// === PUSH FAMILY PULSE EVENT ===
+async function pushPulse(message, type = 'info') {
+  try {
+    await db.collection('pulse').insertOne({
+      message,
+      type,
+      timestamp: new Date()
+    });
+  } catch (err) {
+    console.warn("Pulse insert failed:", err.message);
+  }
 }
 
 // === REGISTER BUSINESS ===
 app.post('/api/register', async (req, res) => {
-  const { businessName, ownerName, ownerDob, businessSince, businessPhone, network = 'MTN', password } = req.body;
+  const { 
+    businessName,
+    ownerName,
+    ownerDob,
+    businessSince,
+    businessPhone,
+    network = 'MTN',
+    password // ✅ NEW
+  } = req.body;
+
   if (!businessName || !ownerName || !ownerDob || !businessSince || !businessPhone || !password) {
     return res.status(400).json({ error: 'All fields required' });
   }
+
   try {
     const existing = await db.collection('merchants').findOne({ businessPhone });
-    if (existing) return res.status(409).json({ error: 'Business already registered' });
+    if (existing) {
+      return res.status(409).json({ error: 'Business already registered' });
+    }
+
     const merchant = {
       businessName,
       ownerName,
@@ -54,14 +87,19 @@ app.post('/api/register', async (req, res) => {
       businessSince: parseInt(businessSince),
       businessPhone,
       network,
-      password,
+      password, // ✅ STORE PASSWORD
       totalTransactions: 0,
       totalVolume: 0,
       active: true,
       createdAt: new Date(),
       lastSeen: new Date()
     };
+
     await db.collection('merchants').insertOne(merchant);
+    
+    // Push welcome pulse
+    await pushPulse(`Welcome ${ownerName}! ${businessName} just joined the family! 👋`, 'welcome');
+
     res.json({ success: true, message: "Business registered" });
   } catch (err) {
     console.error("Register error:", err.message);
@@ -72,12 +110,21 @@ app.post('/api/register', async (req, res) => {
 // === LOGIN EXISTING BUSINESS ===
 app.post('/api/login', async (req, res) => {
   const { businessPhone, password } = req.body;
-  if (!businessPhone || !password) return res.status(400).json({ error: 'Phone and password required' });
+  if (!businessPhone || !password) {
+    return res.status(400).json({ error: 'Phone and password required' });
+  }
+
   try {
     const merchant = await db.collection('merchants').findOne({ businessPhone });
-    if (!merchant) return res.status(404).json({ error: 'Business not found' });
+    if (!merchant) {
+      return res.status(404).json({ error: 'Business not found' });
+    }
+
     const expectedPass = merchant.password || BUSINESS_PASSWORD;
-    if (password !== expectedPass) return res.status(401).json({ error: 'Invalid password' });
+    if (password !== expectedPass) {
+      return res.status(401).json({ error: 'Invalid password' });
+    }
+
     res.json({ success: true, businessPhone });
   } catch (err) {
     res.status(500).json({ error: 'Login failed' });
@@ -87,18 +134,29 @@ app.post('/api/login', async (req, res) => {
 // === RESET PASSWORD (USER) ===
 app.post('/api/reset-password', async (req, res) => {
   const { businessPhone, resetCode, newPassword } = req.body;
-  if (!businessPhone || !resetCode || !newPassword) return res.status(400).json({ error: 'All fields required' });
+  if (!businessPhone || !resetCode || !newPassword) {
+    return res.status(400).json({ error: 'All fields required' });
+  }
+
   try {
     const merchant = await db.collection('merchants').findOne({ 
       businessPhone,
       resetCode,
       resetExpiry: { $gt: new Date() }
     });
-    if (!merchant) return res.status(400).json({ error: 'Invalid or expired reset code' });
+
+    if (!merchant) {
+      return res.status(400).json({ error: 'Invalid or expired reset code' });
+    }
+
     await db.collection('merchants').updateOne(
       { businessPhone },
-      { $set: { password: newPassword }, $unset: { resetCode: "", resetExpiry: "" } }
+      { 
+        $set: { password: newPassword },
+        $unset: { resetCode: "", resetExpiry: "" }
+      }
     );
+
     res.json({ success: true, message: "Password updated" });
   } catch (err) {
     res.status(500).json({ error: 'Password reset failed' });
@@ -108,15 +166,22 @@ app.post('/api/reset-password', async (req, res) => {
 // === GENERATE RESET CODE (ADMIN) ===
 app.post('/api/admin/generate-reset', async (req, res) => {
   const { password, businessPhone } = req.body;
-  if (password !== BUSINESS_PASSWORD) return res.status(401).json({ error: 'Unauthorized' });
+  if (password !== BUSINESS_PASSWORD) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
   try {
     const merchant = await db.collection('merchants').findOne({ businessPhone });
-    if (!merchant) return res.status(404).json({ error: 'Business not found' });
+    if (!merchant) {
+      return res.status(404).json({ error: 'Business not found' });
+    }
+
     const resetCode = generateId('KS1');
     await db.collection('merchants').updateOne(
       { businessPhone },
       { $set: { resetCode, resetExpiry: new Date(Date.now() + 30 * 60000) } }
     );
+
     res.json({ success: true, resetCode, businessName: merchant.businessName });
   } catch (err) {
     res.status(500).json({ error: 'Failed to generate reset code' });
@@ -125,13 +190,26 @@ app.post('/api/admin/generate-reset', async (req, res) => {
 
 // === CREATE TRANSACTION ===
 app.post('/api/momo/request', async (req, res) => {
-  const { businessPhone, customerName = '—', customerNumber = '—', amount = 100 } = req.body;
-  if (!businessPhone || typeof amount !== 'number' || amount <= 0) return res.status(400).json({ error: 'Invalid input' });
+  const { 
+    businessPhone,
+    customerName = '—',
+    customerNumber = '—',
+    amount = 100
+  } = req.body;
+
+  if (!businessPhone || typeof amount !== 'number' || amount <= 0) {
+    return res.status(400).json({ error: 'Invalid input' });
+  }
+
   const commissionRate = 0.01;
   const commission = parseFloat((amount * commissionRate).toFixed(2));
   const netToMerchant = parseFloat((amount - commission).toFixed(2));
+
   const merchant = await db.collection('merchants').findOne({ businessPhone });
-  if (!merchant) return res.status(404).json({ error: 'Business not found' });
+  if (!merchant) {
+    return res.status(404).json({ error: 'Business not found' });
+  }
+
   const transaction = {
     transactionId: generateId('KS1'),
     businessName: merchant.businessName,
@@ -149,12 +227,22 @@ app.post('/api/momo/request', async (req, res) => {
     notes: '',
     updatedAt: new Date()
   };
+
   try {
     await db.collection('transactions').insertOne(transaction);
     await db.collection('merchants').updateOne(
       { businessPhone },
-      { $inc: { totalTransactions: 1, totalVolume: amount }, $set: { lastSeen: new Date() } }
+      { 
+        $inc: { totalTransactions: 1, totalVolume: amount },
+        $set: { lastSeen: new Date() }
+      }
     );
+    
+    // Push Family Pulse
+    const customerShort = customerName.split(' ')[0] || 'Customer';
+    const businessShort = merchant.businessName.split(' ')[0] || 'Business';
+    await pushPulse(`${customerShort} just paid ₵${amount} → ${businessShort} 🎉`, 'transaction');
+
     res.json({ 
       success: true, 
       transactionId: transaction.transactionId,
@@ -168,8 +256,17 @@ app.post('/api/momo/request', async (req, res) => {
 
 // === REPORT TECHNICAL ISSUE ===
 app.post('/api/support', async (req, res) => {
-  const { businessPhone, issue, ownerName = '—', businessName = '—' } = req.body;
-  if (!businessPhone || !issue) return res.status(400).json({ error: 'Business phone and issue required' });
+  const { 
+    businessPhone, 
+    issue, 
+    ownerName = '—', 
+    businessName = '—' 
+  } = req.body;
+  
+  if (!businessPhone || !issue) {
+    return res.status(400).json({ error: 'Business phone and issue required' });
+  }
+
   try {
     const report = {
       businessPhone,
@@ -189,23 +286,30 @@ app.post('/api/support', async (req, res) => {
 // === ADMIN DATA ===
 app.get('/api/admin/data', async (req, res) => {
   const { password } = req.query;
-  if (password !== BUSINESS_PASSWORD) return res.status(401).json({ error: 'Unauthorized' });
+  if (password !== BUSINESS_PASSWORD) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
   try {
     const merchants = await db.collection('merchants')
       .find({ active: true })
       .sort({ createdAt: -1 })
       .toArray();
+
     const transactions = await db.collection('transactions')
       .find()
       .sort({ timestamp: -1 })
       .toArray();
+
     const supportTickets = await db.collection('support')
       .find({ resolved: false })
       .sort({ reportedAt: -1 })
       .toArray();
+
     const stats = await db.collection('transactions').aggregate([
       { $group: { _id: null, totalVolume: { $sum: "$amount" }, totalCommission: { $sum: "$commission" } } }
     ]).toArray();
+
     res.json({
       merchants,
       transactions,
@@ -225,7 +329,9 @@ app.get('/api/admin/data', async (req, res) => {
 // === GET USER TRANSACTIONS ===
 app.post('/api/my-transactions', async (req, res) => {
   const { businessPhone } = req.body;
-  if (!businessPhone) return res.status(400).json([]);
+  if (!businessPhone) {
+    return res.status(400).json([]);
+  }
   try {
     const transactions = await db.collection('transactions')
       .find({ businessPhone })
@@ -234,6 +340,20 @@ app.post('/api/my-transactions', async (req, res) => {
     res.json(transactions);
   } catch (err) {
     res.status(500).json([]);
+  }
+});
+
+// === GET FAMILY PULSE ===
+app.get('/api/pulse', async (req, res) => {
+  try {
+    const pulses = await db.collection('pulse')
+      .find()
+      .sort({ timestamp: -1 })
+      .limit(5)
+      .toArray();
+    res.json(pulses);
+  } catch (err) {
+    res.json([]);
   }
 });
 
@@ -835,6 +955,16 @@ app.get('/app', (req, res) => {
     '  font-size: 14px;',
     '  text-align: center;',
     '}',
+    '#family-pulse {',
+    '  background: rgba(30, 58, 138, 0.08);',
+    '  border-left: 3px solid #3b82f6;',
+    '  padding: 10px;',
+    '  border-radius: 0 8px 8px 0;',
+    '  margin: 12px 0;',
+    '  font-size: 0.9rem;',
+    '  color: #1e40af;',
+    '  display: none;',
+    '}',
     '.theme-toggle {',
     '  background: linear-gradient(135deg, #D4AF37, #FFD700);',
     '  color: #1e3a8a;',
@@ -868,7 +998,7 @@ app.get('/app', (req, res) => {
     '  margin-top: 0.5rem;',
     '  font-style: italic;',
     '}',
-    '@media (max-width: 480px) {',
+    '@media (max-width: 600px) {',
     '  .btn-momo {',
     '    width: 100%;',
     '    margin-bottom: 1rem;',
@@ -887,6 +1017,8 @@ app.get('/app', (req, res) => {
     '      💡 1% solidarity contribution supports our mission.<br/>',
     '      Please remind customers to include Mobile Money network charges when sending funds.',
     '    </div>',
+    '',
+    '    <div id="family-pulse"></div>',
     '',
     '    <div class="card">',
     '      <h2>Create Mobile Money Payment</h2>',
@@ -914,7 +1046,7 @@ app.get('/app', (req, res) => {
     '    <button class="theme-toggle" onclick="toggleTheme()">🌓 Light/Dark</button>',
     '  </div>',
     '',
-    '  <!-- ✅ LEDGER MODAL — BLUE HEADERS, WHITE DATA, GOLD ID -->',
+    '  <!-- ✅ LEDGER MODAL — BLUE TEXT -->',
     '  <div id="ledgerModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.88);z-index:1000;">',
     '    <div style="',
     '      background: rgba(12, 26, 58, 0.96);',
@@ -928,6 +1060,7 @@ app.get('/app', (req, res) => {
     '      border: 1px solid rgba(255, 215, 0, 0.2);',
     '      box-shadow: 0 12px 40px rgba(255, 215, 0, 0.15);',
     '    ">',
+    '      <!-- ✅ BOLD + 3D TITLE -->',
     '      <h2 style="',
     '        color: #FFD700;',
     '        text-align: center;',
@@ -1093,6 +1226,42 @@ app.get('/app', (req, res) => {
     '    function closeLedger() {',
     '      document.getElementById(\'ledgerModal\').style.display = \'none\';',
     '    }',
+    '',
+    '    // === FAMILY PULSE ===',
+    '    async function loadPulse() {',
+    '      try {',
+    '        const res = await fetch(\'/api/pulse\');',
+    '        const pulses = await res.json();',
+    '        if (pulses.length > 0) {',
+    '          const latest = pulses[0];',
+    '          const pulseEl = document.getElementById(\'family-pulse\');',
+    '          pulseEl.textContent = latest.message;',
+    '          pulseEl.style.display = \'block\';',
+    '          ',
+    '          // Glow for new items (< 10 sec old)',
+    '          if (Date.now() - new Date(latest.timestamp).getTime() < 10000) {',
+    '            pulseEl.style.animation = \'pulseGlow 3s ease-in-out\';',
+    '          }',
+    '        }',
+    '      } catch (e) {',
+    '        // Silent fail — pulse is optional',
+    '      }',
+    '    }',
+    '',
+    '    // Add CSS animation for glow',
+    '    const style = document.createElement(\'style\');',
+    '    style.innerHTML = `',
+    '      @keyframes pulseGlow {',
+    '        0% { background-color: rgba(59, 130, 246, 0.15); }',
+    '        50% { background-color: rgba(59, 130, 246, 0.3); }',
+    '        100% { background-color: rgba(59, 130, 246, 0.15); }',
+    '      }',
+    '    `;',
+    '    document.head.appendChild(style);',
+    '',
+    '    // Load on startup + every 30s',
+    '    loadPulse();',
+    '    setInterval(loadPulse, 30000);',
     '  </script>',
     '</body>',
     '</html>'
@@ -1199,6 +1368,16 @@ app.get('/admin', (req, res) => {
     '  text-align: center;',
     '  font-weight: 600;',
     '  box-shadow: 0 4px 12px rgba(30, 58, 138, 0.3);',
+    '}',
+    '#family-pulse {',
+    '  background: rgba(30, 58, 138, 0.08);',
+    '  border-left: 3px solid #3b82f6;',
+    '  padding: 10px;',
+    '  border-radius: 0 8px 8px 0;',
+    '  margin: 12px 0;',
+    '  font-size: 0.9rem;',
+    '  color: #cbd5e1;',
+    '  display: none;',
     '}',
     '/* 🎂 BIRTHDAY BANNER */',
     '#birthdayBanner {',
@@ -1401,6 +1580,8 @@ app.get('/admin', (req, res) => {
     '      🌍 Every transaction fuels our mission to empower African SMEs with sovereign digital tools.',
     '    </div>',
     '',
+    '    <div id="family-pulse"></div>',
+    '',
     '    <!-- 🎂 BIRTHDAY NOTIFICATION -->',
     '    <div id="birthdayBanner"></div>',
     '',
@@ -1567,6 +1748,42 @@ app.get('/admin', (req, res) => {
     '        window.location.href = \'/\';',
     '      }',
     '    }',
+    '',
+    '    // === FAMILY PULSE ===',
+    '    async function loadPulse() {',
+    '      try {',
+    '        const res = await fetch(\'/api/pulse\');',
+    '        const pulses = await res.json();',
+    '        if (pulses.length > 0) {',
+    '          const latest = pulses[0];',
+    '          const pulseEl = document.getElementById(\'family-pulse\');',
+    '          pulseEl.textContent = latest.message;',
+    '          pulseEl.style.display = \'block\';',
+    '          ',
+    '          // Glow for new items (< 10 sec old)',
+    '          if (Date.now() - new Date(latest.timestamp).getTime() < 10000) {',
+    '            pulseEl.style.animation = \'pulseGlow 3s ease-in-out\';',
+    '          }',
+    '        }',
+    '      } catch (e) {',
+    '        // Silent fail — pulse is optional',
+    '      }',
+    '    }',
+    '',
+    '    // Add CSS animation for glow',
+    '    const style = document.createElement(\'style\');',
+    '    style.innerHTML = `',
+    '      @keyframes pulseGlow {',
+    '        0% { background-color: rgba(59, 130, 246, 0.15); }',
+    '        50% { background-color: rgba(59, 130, 246, 0.3); }',
+    '        100% { background-color: rgba(59, 130, 246, 0.15); }',
+    '      }',
+    '    `;',
+    '    document.head.appendChild(style);',
+    '',
+    '    // Load on startup + every 30s',
+    '    loadPulse();',
+    '    setInterval(loadPulse, 30000);',
     '',
     '    // ✅ REAL-TIME SEARCH FEEDBACK',
     '    async function showSearchResult() {',
