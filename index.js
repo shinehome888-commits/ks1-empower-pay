@@ -35,31 +35,18 @@ async function initDB() {
 }
 
 function generateId(prefix = 'KS1') {
-  return `${prefix}-${Math.floor(100 + Math.random() * 900)}-${Math.floor(100 + Math.random() * 900)}`;
+  return prefix + '-' + Math.floor(100 + Math.random() * 900) + '-' + Math.floor(100 + Math.random() * 900);
 }
 
 // === REGISTER BUSINESS ===
 app.post('/api/register', async (req, res) => {
-  const { 
-    businessName,
-    ownerName,
-    ownerDob,
-    businessSince,
-    businessPhone,
-    network = 'MTN',
-    password
-  } = req.body;
-
+  const { businessName, ownerName, ownerDob, businessSince, businessPhone, network = 'MTN', password } = req.body;
   if (!businessName || !ownerName || !ownerDob || !businessSince || !businessPhone || !password) {
     return res.status(400).json({ error: 'All fields required' });
   }
-
   try {
     const existing = await db.collection('merchants').findOne({ businessPhone });
-    if (existing) {
-      return res.status(409).json({ error: 'Business already registered' });
-    }
-
+    if (existing) return res.status(409).json({ error: 'Business already registered' });
     const merchant = {
       businessName,
       ownerName,
@@ -74,7 +61,6 @@ app.post('/api/register', async (req, res) => {
       createdAt: new Date(),
       lastSeen: new Date()
     };
-
     await db.collection('merchants').insertOne(merchant);
     res.json({ success: true, message: "Business registered" });
   } catch (err) {
@@ -86,21 +72,12 @@ app.post('/api/register', async (req, res) => {
 // === LOGIN EXISTING BUSINESS ===
 app.post('/api/login', async (req, res) => {
   const { businessPhone, password } = req.body;
-  if (!businessPhone || !password) {
-    return res.status(400).json({ error: 'Phone and password required' });
-  }
-
+  if (!businessPhone || !password) return res.status(400).json({ error: 'Phone and password required' });
   try {
     const merchant = await db.collection('merchants').findOne({ businessPhone });
-    if (!merchant) {
-      return res.status(404).json({ error: 'Business not found' });
-    }
-
+    if (!merchant) return res.status(404).json({ error: 'Business not found' });
     const expectedPass = merchant.password || BUSINESS_PASSWORD;
-    if (password !== expectedPass) {
-      return res.status(401).json({ error: 'Invalid password' });
-    }
-
+    if (password !== expectedPass) return res.status(401).json({ error: 'Invalid password' });
     res.json({ success: true, businessPhone });
   } catch (err) {
     res.status(500).json({ error: 'Login failed' });
@@ -110,29 +87,11 @@ app.post('/api/login', async (req, res) => {
 // === RESET PASSWORD (USER) ===
 app.post('/api/reset-password', async (req, res) => {
   const { businessPhone, resetCode, newPassword } = req.body;
-  if (!businessPhone || !resetCode || !newPassword) {
-    return res.status(400).json({ error: 'All fields required' });
-  }
-
+  if (!businessPhone || !resetCode || !newPassword) return res.status(400).json({ error: 'All fields required' });
   try {
-    const merchant = await db.collection('merchants').findOne({ 
-      businessPhone,
-      resetCode,
-      resetExpiry: { $gt: new Date() }
-    });
-
-    if (!merchant) {
-      return res.status(400).json({ error: 'Invalid or expired reset code' });
-    }
-
-    await db.collection('merchants').updateOne(
-      { businessPhone },
-      { 
-        $set: { password: newPassword },
-        $unset: { resetCode: "", resetExpiry: "" }
-      }
-    );
-
+    const merchant = await db.collection('merchants').findOne({ businessPhone, resetCode, resetExpiry: { $gt: new Date() } });
+    if (!merchant) return res.status(400).json({ error: 'Invalid or expired reset code' });
+    await db.collection('merchants').updateOne({ businessPhone }, { $set: { password: newPassword }, $unset: { resetCode: "", resetExpiry: "" } });
     res.json({ success: true, message: "Password updated" });
   } catch (err) {
     res.status(500).json({ error: 'Password reset failed' });
@@ -142,22 +101,12 @@ app.post('/api/reset-password', async (req, res) => {
 // === GENERATE RESET CODE (ADMIN) ===
 app.post('/api/admin/generate-reset', async (req, res) => {
   const { password, businessPhone } = req.body;
-  if (password !== BUSINESS_PASSWORD) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
+  if (password !== BUSINESS_PASSWORD) return res.status(401).json({ error: 'Unauthorized' });
   try {
     const merchant = await db.collection('merchants').findOne({ businessPhone });
-    if (!merchant) {
-      return res.status(404).json({ error: 'Business not found' });
-    }
-
+    if (!merchant) return res.status(404).json({ error: 'Business not found' });
     const resetCode = generateId('KS1');
-    await db.collection('merchants').updateOne(
-      { businessPhone },
-      { $set: { resetCode, resetExpiry: new Date(Date.now() + 30 * 60000) } }
-    );
-
+    await db.collection('merchants').updateOne({ businessPhone }, { $set: { resetCode, resetExpiry: new Date(Date.now() + 30 * 60000) } });
     res.json({ success: true, resetCode, businessName: merchant.businessName });
   } catch (err) {
     res.status(500).json({ error: 'Failed to generate reset code' });
@@ -166,26 +115,13 @@ app.post('/api/admin/generate-reset', async (req, res) => {
 
 // === CREATE TRANSACTION ===
 app.post('/api/momo/request', async (req, res) => {
-  const { 
-    businessPhone,
-    customerName = '—',
-    customerNumber = '—',
-    amount = 100
-  } = req.body;
-
-  if (!businessPhone || typeof amount !== 'number' || amount <= 0) {
-    return res.status(400).json({ error: 'Invalid input' });
-  }
-
+  const { businessPhone, customerName = '—', customerNumber = '—', amount = 100 } = req.body;
+  if (!businessPhone || typeof amount !== 'number' || amount <= 0) return res.status(400).json({ error: 'Invalid input' });
   const commissionRate = 0.01;
   const commission = parseFloat((amount * commissionRate).toFixed(2));
   const netToMerchant = parseFloat((amount - commission).toFixed(2));
-
   const merchant = await db.collection('merchants').findOne({ businessPhone });
-  if (!merchant) {
-    return res.status(404).json({ error: 'Business not found' });
-  }
-
+  if (!merchant) return res.status(404).json({ error: 'Business not found' });
   const transaction = {
     transactionId: generateId('KS1'),
     businessName: merchant.businessName,
@@ -203,21 +139,10 @@ app.post('/api/momo/request', async (req, res) => {
     notes: '',
     updatedAt: new Date()
   };
-
   try {
     await db.collection('transactions').insertOne(transaction);
-    await db.collection('merchants').updateOne(
-      { businessPhone },
-      { 
-        $inc: { totalTransactions: 1, totalVolume: amount },
-        $set: { lastSeen: new Date() }
-      }
-    );
-    res.json({ 
-      success: true, 
-      transactionId: transaction.transactionId,
-      businessName: merchant.businessName
-    });
+    await db.collection('merchants').updateOne({ businessPhone }, { $inc: { totalTransactions: 1, totalVolume: amount }, $set: { lastSeen: new Date() } });
+    res.json({ success: true, transactionId: transaction.transactionId, businessName: merchant.businessName });
   } catch (err) {
     console.error("Save error:", err.message);
     res.status(500).json({ error: 'Failed to save transaction' });
@@ -226,26 +151,10 @@ app.post('/api/momo/request', async (req, res) => {
 
 // === REPORT TECHNICAL ISSUE ===
 app.post('/api/support', async (req, res) => {
-  const { 
-    businessPhone, 
-    issue, 
-    ownerName = '—', 
-    businessName = '—' 
-  } = req.body;
-  
-  if (!businessPhone || !issue) {
-    return res.status(400).json({ error: 'Business phone and issue required' });
-  }
-
+  const { businessPhone, issue, ownerName = '—', businessName = '—' } = req.body;
+  if (!businessPhone || !issue) return res.status(400).json({ error: 'Business phone and issue required' });
   try {
-    const report = {
-      businessPhone,
-      ownerName,
-      businessName,
-      issue,
-      reportedAt: new Date(),
-      resolved: false
-    };
+    const report = { businessPhone, ownerName, businessName, issue, reportedAt: new Date(), resolved: false };
     await db.collection('support').insertOne(report);
     res.json({ success: true, message: "Support ticket created." });
   } catch (err) {
@@ -256,30 +165,12 @@ app.post('/api/support', async (req, res) => {
 // === ADMIN DATA ===
 app.get('/api/admin/data', async (req, res) => {
   const { password } = req.query;
-  if (password !== BUSINESS_PASSWORD) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
+  if (password !== BUSINESS_PASSWORD) return res.status(401).json({ error: 'Unauthorized' });
   try {
-    const merchants = await db.collection('merchants')
-      .find({ active: true })
-      .sort({ createdAt: -1 })
-      .toArray();
-
-    const transactions = await db.collection('transactions')
-      .find()
-      .sort({ timestamp: -1 })
-      .toArray();
-
-    const supportTickets = await db.collection('support')
-      .find({ resolved: false })
-      .sort({ reportedAt: -1 })
-      .toArray();
-
-    const stats = await db.collection('transactions').aggregate([
-      { $group: { _id: null, totalVolume: { $sum: "$amount" }, totalCommission: { $sum: "$commission" } } }
-    ]).toArray();
-
+    const merchants = await db.collection('merchants').find({ active: true }).sort({ createdAt: -1 }).toArray();
+    const transactions = await db.collection('transactions').find().sort({ timestamp: -1 }).toArray();
+    const supportTickets = await db.collection('support').find({ resolved: false }).sort({ reportedAt: -1 }).toArray();
+    const stats = await db.collection('transactions').aggregate([{ $group: { _id: null, totalVolume: { $sum: "$amount" }, totalCommission: { $sum: "$commission" } } }]).toArray();
     res.json({
       merchants,
       transactions,
@@ -299,14 +190,9 @@ app.get('/api/admin/data', async (req, res) => {
 // === GET USER TRANSACTIONS ===
 app.post('/api/my-transactions', async (req, res) => {
   const { businessPhone } = req.body;
-  if (!businessPhone) {
-    return res.status(400).json([]);
-  }
+  if (!businessPhone) return res.status(400).json([]);
   try {
-    const transactions = await db.collection('transactions')
-      .find({ businessPhone })
-      .sort({ timestamp: -1 })
-      .toArray();
+    const transactions = await db.collection('transactions').find({ businessPhone }).sort({ timestamp: -1 }).toArray();
     res.json(transactions);
   } catch (err) {
     res.status(500).json([]);
@@ -1114,7 +1000,7 @@ app.get('/app', (req, res) => {
             });
             const d = await res.json();
             if (d.success) {
-              // ✅ SAFE STRING CONCATENATION — NO BACKTICKS IN TEMPLATE
+              // ✅ SAFE STRING CONCATENATION — NO BACKTICKS
               const receiptText = 
                 "KS1 EMPOWER PAY\\n" +
                 "────────────────────\\n" +
@@ -1620,8 +1506,8 @@ app.get('/admin', (req, res) => {
 
             // ✅ USD CONVERSION (1 USD = 15 GHS)
             const GHS_TO_USD = 15;
-            document.getElementById('totalVolUSD').textContent = \`≈ \${(data.stats.totalVolume / GHS_TO_USD).toFixed(2)} USD\`;
-            document.getElementById('totalCommUSD').textContent = \`≈ \${(data.stats.totalCommission / GHS_TO_USD).toFixed(2)} USD\`;
+            document.getElementById('totalVolUSD').textContent = '≈ ' + (data.stats.totalVolume / GHS_TO_USD).toFixed(2) + ' USD';
+            document.getElementById('totalCommUSD').textContent = '≈ ' + (data.stats.totalCommission / GHS_TO_USD).toFixed(2) + ' USD';
 
             // 🎂 Check for birthdays today
             const today = new Date();
@@ -1632,7 +1518,7 @@ app.get('/admin', (req, res) => {
 
             if (birthdayBusinesses.length > 0) {
               document.getElementById('birthdayBanner').innerHTML = 
-                \`🎉 Happy Birthday to <b>\${birthdayBusinesses.map(b => b.ownerName).join(', ')}</b>!\`;
+                '🎉 Happy Birthday to <b>' + birthdayBusinesses.map(b => b.ownerName).join(', ') + '</b>!';
               document.getElementById('birthdayBanner').style.display = 'block';
             } else {
               document.getElementById('birthdayBanner').style.display = 'none';
@@ -1662,9 +1548,9 @@ app.get('/admin', (req, res) => {
             if (match) {
               let html = '';
               if (match.transactionId) {
-                html = \`✅ Found Transaction: <b>\${match.transactionId}</b><br/>Business: \${match.businessName}<br/>Amount: ₵\${match.amount}\`;
+                html = '✅ Found Transaction: <b>' + match.transactionId + '</b><br/>Business: ' + match.businessName + '<br/>Amount: ₵' + match.amount;
               } else {
-                html = \`✅ Found Business: <b>\${match.businessName}</b><br/>Owner: \${match.ownerName}<br/>Phone: \${match.businessPhone}\`;
+                html = '✅ Found Business: <b>' + match.businessName + '</b><br/>Owner: ' + match.ownerName + '<br/>Phone: ' + match.businessPhone;
               }
               document.getElementById('searchResult').innerHTML = html;
               document.getElementById('searchResult').style.display = 'block';
@@ -1684,43 +1570,43 @@ app.get('/admin', (req, res) => {
             // ✅ NEW BUSINESSES: SEPARATE "Owner Name" AND "DOB"
             document.getElementById('bizBody').innerHTML = data.merchants.slice(0, 20).map(b => {
               const dob = new Date(b.ownerDob);
-              const dobStr = \`\${dob.getDate()}/\${dob.getMonth()+1}/\${dob.getFullYear()}\`;
-              return \`<tr>
-                <td><strong>\${b.businessName}</strong></td>
-                <td>\${b.ownerName}</td>
-                <td>\${dobStr}</td>
-                <td>\${b.businessPhone}</td>
-                <td><span style="background:#3b82f6;padding:2px 6px;border-radius:4px;color:white;font-size:0.85em;">\${b.network || '—'}</span></td>
-                <td>\${b.businessSince}</td>
-                <td>\${new Date(b.createdAt).toLocaleDateString()}</td>
-                <td><button class="btn-delete" onclick="deleteBusiness('\${b.businessPhone}')">🗑️</button></td>
-              </tr>\`;
+              const dobStr = dob.getDate() + '/' + (dob.getMonth()+1) + '/' + dob.getFullYear();
+              return '<tr>' +
+                '<td><strong>' + b.businessName + '</strong></td>' +
+                '<td>' + b.ownerName + '</td>' +
+                '<td>' + dobStr + '</td>' +
+                '<td>' + b.businessPhone + '</td>' +
+                '<td><span style="background:#3b82f6;padding:2px 6px;border-radius:4px;color:white;font-size:0.85em;">' + (b.network || '—') + '</span></td>' +
+                '<td>' + b.businessSince + '</td>' +
+                '<td>' + new Date(b.createdAt).toLocaleDateString() + '</td>' +
+                '<td><button class="btn-delete" onclick="deleteBusiness(\'' + b.businessPhone + '\')">🗑️</button></td>' +
+                '</tr>';
             }).join('');
 
             // ✅ TRANSACTIONS: ALL DETAILS VISIBLE
             document.getElementById('txBody').innerHTML = data.transactions.slice(0, 30).map(tx => {
               const merchant = data.merchants.find(m => m.businessPhone === tx.businessPhone);
               const network = merchant ? merchant.network : '—';
-              return \`<tr>
-                <td><code style="font-family:monospace;color:#FFD700;">\${tx.transactionId}</code></td>
-                <td>\${new Date(tx.timestamp).toLocaleString()}</td>
-                <td><strong>\${tx.businessName}</strong><br/><small>\${tx.businessPhone}</small></td>
-                <td><span style="background:#3b82f6;padding:2px 6px;border-radius:4px;color:white;font-size:0.85em;">\${network}</span></td>
-                <td>\${tx.customerName} (<small>\${tx.customerNumber}</small>)</td>
-                <td>₵\${tx.amount.toFixed(2)}</td>
-                <td>₵\${tx.commission.toFixed(2)}</td>
-                <td><button class="btn-delete" onclick="deleteTransaction('\${tx.transactionId}')">🗑️</button></td>
-              </tr>\`;
+              return '<tr>' +
+                '<td><code style="font-family:monospace;color:#FFD700;">' + tx.transactionId + '</code></td>' +
+                '<td>' + new Date(tx.timestamp).toLocaleString() + '</td>' +
+                '<td><strong>' + tx.businessName + '</strong><br/><small>' + tx.businessPhone + '</small></td>' +
+                '<td><span style="background:#3b82f6;padding:2px 6px;border-radius:4px;color:white;font-size:0.85em;">' + network + '</span></td>' +
+                '<td>' + tx.customerName + ' (<small>' + tx.customerNumber + '</small>)</td>' +
+                '<td>₵' + tx.amount.toFixed(2) + '</td>' +
+                '<td>₵' + tx.commission.toFixed(2) + '</td>' +
+                '<td><button class="btn-delete" onclick="deleteTransaction(\'' + tx.transactionId + '\')">🗑️</button></td>' +
+                '</tr>';
             }).join('');
 
             // ✅ SUPPORT TICKETS
             document.getElementById('supportBody').innerHTML = data.supportTickets.map(t => 
-              \`<tr>
-                <td><strong>\${t.businessName}</strong> (\${t.ownerName})<br/><small>\${t.businessPhone}</small></td>
-                <td>\${t.issue}</td>
-                <td>\${new Date(t.reportedAt).toLocaleString()}</td>
-                <td><button class="btn-delete" onclick="deleteSupportTicket('\${t._id}')">🗑️</button></td>
-              </tr>\`
+              '<tr>' +
+                '<td><strong>' + t.businessName + '</strong> (' + t.ownerName + ')<br/><small>' + t.businessPhone + '</small></td>' +
+                '<td>' + t.issue + '</td>' +
+                '<td>' + new Date(t.reportedAt).toLocaleString() + '</td>' +
+                '<td><button class="btn-delete" onclick="deleteSupportTicket(\'' + t._id + '\')">🗑️</button></td>' +
+              '</tr>'
             ).join('');
             
             document.getElementById('dashboardModal').style.display = 'block';
@@ -1737,7 +1623,7 @@ app.get('/admin', (req, res) => {
         async function deleteBusiness(phone) {
           if (!confirm('Delete this business and all its data?')) return;
           try {
-            await fetch(\`/api/admin/business/\${phone}?password=\${encodeURIComponent(currentPassword)}\`, { method: 'DELETE' });
+            await fetch('/api/admin/business/' + phone + '?password=' + encodeURIComponent(currentPassword), { method: 'DELETE' });
             viewFullDashboard(); // refresh modal
           } catch (e) { alert('Delete failed'); }
         }
@@ -1745,7 +1631,7 @@ app.get('/admin', (req, res) => {
         async function deleteTransaction(id) {
           if (!confirm('Delete this transaction?')) return;
           try {
-            await fetch(\`/api/admin/transaction/\${id}?password=\${encodeURIComponent(currentPassword)}\`, { method: 'DELETE' });
+            await fetch('/api/admin/transaction/' + id + '?password=' + encodeURIComponent(currentPassword), { method: 'DELETE' });
             viewFullDashboard();
           } catch (e) { alert('Delete failed'); }
         }
@@ -1753,7 +1639,7 @@ app.get('/admin', (req, res) => {
         async function deleteSupportTicket(id) {
           if (!confirm('Delete this support ticket?')) return;
           try {
-            await fetch(\`/api/admin/support/\${id}?password=\${encodeURIComponent(currentPassword)}\`, { method: 'DELETE' });
+            await fetch('/api/admin/support/' + id + '?password=' + encodeURIComponent(currentPassword), { method: 'DELETE' });
             viewFullDashboard();
           } catch (e) { alert('Delete failed'); }
         }
@@ -1779,10 +1665,10 @@ app.get('/admin', (req, res) => {
             const data = await res.json();
             
             if (data.success) {
-              resultDiv.innerHTML = \`✅ Reset code for <b>\${data.businessName}</b>:<br/><b style="font-size:1.2em;">\${data.resetCode}</b><br/><small>Valid for 30 minutes</small>\`;
+              resultDiv.innerHTML = '✅ Reset code for <b>' + data.businessName + '</b>:<br/><b style="font-size:1.2em;">' + data.resetCode + '</b><br/><small>Valid for 30 minutes</small>';
               resultDiv.style.display = 'block';
             } else {
-              resultDiv.innerHTML = \`❌ \${data.error}\`;
+              resultDiv.innerHTML = '❌ ' + data.error;
               resultDiv.style.display = 'block';
             }
           } catch (e) {
