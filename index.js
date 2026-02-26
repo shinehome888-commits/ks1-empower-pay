@@ -67,7 +67,7 @@ app.post('/api/register', async (req, res) => {
     businessSince,
     businessPhone,
     network = 'MTN',
-    password // ✅ NEW
+    password
   } = req.body;
 
   if (!businessName || !ownerName || !ownerDob || !businessSince || !businessPhone || !password) {
@@ -87,7 +87,7 @@ app.post('/api/register', async (req, res) => {
       businessSince: parseInt(businessSince),
       businessPhone,
       network,
-      password, // ✅ STORE PASSWORD
+      password,
       totalTransactions: 0,
       totalVolume: 0,
       active: true,
@@ -1171,20 +1171,8 @@ app.get('/app', (req, res) => {
     '        });',
     '        const d = await res.json();',
     '        if (d.success) {',
-    '          // ✅ SAFE STRING CONCATENATION — NO BACKTICKS',
-    '          const receiptText = ',
-    '            "KS1 EMPOWER PAY\\\\n" +',
-    '            "────────────────────\\\\n" +',
-    '            "Business: " + d.businessName + "\\\\n" +',
-    '            "Customer: " + data.customerName + "\\\\n" +',
-    '            "Amount: GHS " + data.amount + "\\\\n" +',
-    '            "Status: Completed\\\\n" +',
-    '            "ID: " + d.transactionId + "\\\\n" +',
-    '            "Timestamp: " + new Date().toLocaleString() + "\\\\n\\\\n" +',
-    '            "Thank You! You just empowered Alkebulan (AFRICA) digital freedom.";',
-    '          ',
-    '          const waUrl = "https://wa.me/?text=" + encodeURIComponent(receiptText);',
-    '          r.innerHTML = \'<strong>✅ Payment Completed!</strong><br/>Transaction ID: <b>\' + d.transactionId + \'</b><br/><a href="\' + waUrl + \'" target="_blank" style="color:#3b82f6;">📱 View Receipt on WhatsApp</a>\';',
+    '          // ✅ NO WHATSAPP RECEIPT — CLEAN CONFIRMATION ONLY',
+    '          r.innerHTML = \'<strong>✅ Payment Completed!</strong><br/>Transaction ID: <b>\' + d.transactionId + \'</b><br/>The customer will receive their receipt via WhatsApp.\';',
     '        } else {',
     '          r.innerHTML = \'❌ Failed: \' + (d.error || \'Unknown\');',
     '        }',
@@ -1914,7 +1902,7 @@ app.get('/admin', (req, res) => {
     '          method: \'POST\',',
     '          headers: { \'Content-Type\': \'application/json\' },',
     '          body: JSON.stringify({ ',
-    '            password: currentPassword,',
+    '            password: currentPassword,
     '            businessPhone: phone ',
     '          })',
     '        });',
