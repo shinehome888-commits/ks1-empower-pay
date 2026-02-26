@@ -47,7 +47,7 @@ app.post('/api/register', async (req, res) => {
     businessSince,
     businessPhone,
     network = 'MTN',
-    password // ✅ NEW
+    password
   } = req.body;
 
   if (!businessName || !ownerName || !ownerDob || !businessSince || !businessPhone || !password) {
@@ -1114,18 +1114,19 @@ app.get('/app', (req, res) => {
             });
             const d = await res.json();
             if (d.success) {
+              // ✅ SAFE STRING CONCATENATION — NO BACKTICKS IN TEMPLATE
               const receiptText = 
-                \`KS1 EMPOWER PAY\\n\` +
-                \`────────────────────\\n\` +
-                \`Business: \${d.businessName}\\n\` +
-                \`Customer: \${data.customerName}\\n\` +
-                \`Amount: GHS \${data.amount}\\n\` +
-                \`Status: Completed\\n\` +
-                \`ID: \${d.transactionId}\\n\` +
-                \`Timestamp: \${new Date().toLocaleString()}\\n\\n\` +
-                \`Thank You! You just empowered Alkebulan (AFRICA) digital freedom.\`;
-
-              const waUrl = \`https://wa.me/?text=\${encodeURIComponent(receiptText)}\`;
+                "KS1 EMPOWER PAY\\n" +
+                "────────────────────\\n" +
+                "Business: " + d.businessName + "\\n" +
+                "Customer: " + data.customerName + "\\n" +
+                "Amount: GHS " + data.amount + "\\n" +
+                "Status: Completed\\n" +
+                "ID: " + d.transactionId + "\\n" +
+                "Timestamp: " + new Date().toLocaleString() + "\\n\\n" +
+                "Thank You! You just empowered Alkebulan (AFRICA) digital freedom.";
+              
+              const waUrl = "https://wa.me/?text=" + encodeURIComponent(receiptText);
               r.innerHTML = '<strong>✅ Payment Completed!</strong><br/>Transaction ID: <b>' + d.transactionId + '</b><br/><a href="' + waUrl + '" target="_blank" style="color:#3b82f6;">📱 View Receipt on WhatsApp</a>';
             } else {
               r.innerHTML = '❌ Failed: ' + (d.error || 'Unknown');
@@ -1147,16 +1148,16 @@ app.get('/app', (req, res) => {
             
             // ✅ Blue headers, white data, gold ID
             document.getElementById('ledgerBody').innerHTML = transactions.map(tx => 
-              \`<tr style="border-bottom:1px solid rgba(255,255,255,0.08);">
-                <td style="padding:0.85rem 0.6rem;"><code style="font-family:monospace;color:#FFD700;">\${tx.transactionId}</code></td>
-                <td style="padding:0.85rem 0.6rem;">\${new Date(tx.timestamp).toLocaleString()}</td>
-                <td style="padding:0.85rem 0.6rem;">\${tx.customerName}<br/><small style="color:#94a3b8;">\${tx.customerNumber}</small></td>
-                <td style="padding:0.85rem 0.6rem;">₵\${tx.amount.toFixed(2)}</td>
-                <td style="padding:0.85rem 0.6rem;">₵\${tx.commission.toFixed(2)}</td>
+              `<tr style="border-bottom:1px solid rgba(255,255,255,0.08);">
+                <td style="padding:0.85rem 0.6rem;"><code style="font-family:monospace;color:#FFD700;">${tx.transactionId}</code></td>
+                <td style="padding:0.85rem 0.6rem;">${new Date(tx.timestamp).toLocaleString()}</td>
+                <td style="padding:0.85rem 0.6rem;">${tx.customerName}<br/><small style="color:#94a3b8;">${tx.customerNumber}</small></td>
+                <td style="padding:0.85rem 0.6rem;">₵${tx.amount.toFixed(2)}</td>
+                <td style="padding:0.85rem 0.6rem;">₵${tx.commission.toFixed(2)}</td>
                 <td style="padding:0.85rem 0.6rem;">
-                  <span style="background:#10b981;color:white;padding:4px 8px;border-radius:6px;font-size:0.85em;font-weight:600;">\${tx.status}</span>
+                  <span style="background:#10b981;color:white;padding:4px 8px;border-radius:6px;font-size:0.85em;font-weight:600;">${tx.status}</span>
                 </td>
-              </tr>\`
+              </tr>`
             ).join('');
             
             document.getElementById('ledgerModal').style.display = 'block';
@@ -1619,8 +1620,8 @@ app.get('/admin', (req, res) => {
 
             // ✅ USD CONVERSION (1 USD = 15 GHS)
             const GHS_TO_USD = 15;
-            document.getElementById('totalVolUSD').textContent = `≈ ${(data.stats.totalVolume / GHS_TO_USD).toFixed(2)} USD`;
-            document.getElementById('totalCommUSD').textContent = `≈ ${(data.stats.totalCommission / GHS_TO_USD).toFixed(2)} USD`;
+            document.getElementById('totalVolUSD').textContent = \`≈ \${(data.stats.totalVolume / GHS_TO_USD).toFixed(2)} USD\`;
+            document.getElementById('totalCommUSD').textContent = \`≈ \${(data.stats.totalCommission / GHS_TO_USD).toFixed(2)} USD\`;
 
             // 🎂 Check for birthdays today
             const today = new Date();
