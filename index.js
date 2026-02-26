@@ -67,7 +67,7 @@ app.post('/api/register', async (req, res) => {
       businessSince: parseInt(businessSince),
       businessPhone,
       network,
-      password, // ✅ STORE PASSWORD
+      password,
       totalTransactions: 0,
       totalVolume: 0,
       active: true,
@@ -346,7 +346,8 @@ app.delete('/api/admin/support/:id', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: 'Delete failed' });
   }
-});// === LANDING PAGE ===
+});
+// === LANDING PAGE ===
 app.get('/', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -474,7 +475,7 @@ app.get('/', (req, res) => {
             0 6px 12px rgba(212, 175, 55, 0.4);
           transition: all 0.15s ease;
           margin-top: 0.5rem;
-          min-height: 44px;
+          min-height: 48px;
         }
         .btn-action:hover {
           background: linear-gradient(135deg, #E6C24A, #FFE04D);
@@ -878,7 +879,7 @@ app.get('/app', (req, res) => {
           text-transform: uppercase;
           letter-spacing: 0.6px;
           font-size: 1rem;
-          padding: 0.9rem;
+          padding: 0.85rem 1rem;
           border: none;
           border-radius: 10px;
           width: 100%;
@@ -887,7 +888,7 @@ app.get('/app', (req, res) => {
             0 4px 0 #B8860B,
             0 6px 12px rgba(212, 175, 55, 0.3);
           transition: all 0.15s ease;
-          min-height: 44px;
+          min-height: 48px;
         }
         #result {
           margin-top: 1rem;
@@ -943,10 +944,10 @@ app.get('/app', (req, res) => {
           margin-top: 0.5rem;
           font-style: italic;
         }
-        @media (max-width: 600px) {
-          .btn-momo, .theme-toggle {
+        @media (max-width: 480px) {
+          .btn-momo {
             width: 100%;
-            margin-bottom: 0.5rem;
+            margin-bottom: 1rem;
           }
         }
       </style>
@@ -975,7 +976,7 @@ app.get('/app', (req, res) => {
           <div id="result"></div>
         </div>
 
-        <!-- ✅ MY TRANSACTION LEDGER BUTTON — YELLOW GOLD, 3D -->
+        <!-- ✅ MY TRANSACTION LEDGER BUTTON — YELLOW GOLD, 3D, FLEXIBLE -->
         <button class="btn-momo" onclick="viewLedger()" style="
           margin-top: 1.2rem;
           background: linear-gradient(135deg, #D4AF37, #FFD700);
@@ -989,7 +990,7 @@ app.get('/app', (req, res) => {
         <button class="theme-toggle" onclick="toggleTheme()">🌓 Light/Dark</button>
       </div>
 
-      <!-- ✅ LEDGER MODAL — BLUE TEXT -->
+      <!-- ✅ LEDGER MODAL — BLUE HEADERS, WHITE DATA, GOLD ID -->
       <div id="ledgerModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.88);z-index:1000;">
         <div style="
           background: rgba(12, 26, 58, 0.96);
@@ -1003,7 +1004,6 @@ app.get('/app', (req, res) => {
           border: 1px solid rgba(255, 215, 0, 0.2);
           box-shadow: 0 12px 40px rgba(255, 215, 0, 0.15);
         ">
-          <!-- ✅ BOLD + 3D TITLE -->
           <h2 style="
             color: #FFD700;
             text-align: center;
@@ -1017,15 +1017,15 @@ app.get('/app', (req, res) => {
           <table style="width:100%;border-collapse:collapse;margin-top:0.8rem;background:rgba(0,0,0,0.2);border-radius:10px;overflow:hidden;">
             <thead>
               <tr>
-                <th style="color:#FFD700;font-weight:800;font-size:0.92rem;background:rgba(212,175,55,0.1);padding:0.85rem 0.6rem;text-align:left;">ID</th>
-                <th style="color:#FFD700;font-weight:800;font-size:0.92rem;background:rgba(212,175,55,0.1);padding:0.85rem 0.6rem;text-align:left;">Date</th>
-                <th style="color:#FFD700;font-weight:800;font-size:0.92rem;background:rgba(212,175,55,0.1);padding:0.85rem 0.6rem;text-align:left;">Customer</th>
-                <th style="color:#FFD700;font-weight:800;font-size:0.92rem;background:rgba(212,175,55,0.1);padding:0.85rem 0.6rem;text-align:left;">Amount (GHS)</th>
-                <th style="color:#FFD700;font-weight:800;font-size:0.92rem;background:rgba(212,175,55,0.1);padding:0.85rem 0.6rem;text-align:left;">Commission (GHS)</th>
-                <th style="color:#FFD700;font-weight:800;font-size:0.92rem;background:rgba(212,175,55,0.1);padding:0.85rem 0.6rem;text-align:left;">Status</th>
+                <th style="color:#1e3a8a;font-weight:800;font-size:0.92rem;background:rgba(212,175,55,0.1);padding:0.85rem 0.6rem;text-align:left;">ID</th>
+                <th style="color:#1e3a8a;font-weight:800;font-size:0.92rem;background:rgba(212,175,55,0.1);padding:0.85rem 0.6rem;text-align:left;">Date</th>
+                <th style="color:#1e3a8a;font-weight:800;font-size:0.92rem;background:rgba(212,175,55,0.1);padding:0.85rem 0.6rem;text-align:left;">Customer</th>
+                <th style="color:#1e3a8a;font-weight:800;font-size:0.92rem;background:rgba(212,175,55,0.1);padding:0.85rem 0.6rem;text-align:left;">Amount (GHS)</th>
+                <th style="color:#1e3a8a;font-weight:800;font-size:0.92rem;background:rgba(212,175,55,0.1);padding:0.85rem 0.6rem;text-align:left;">Commission (GHS)</th>
+                <th style="color:#1e3a8a;font-weight:800;font-size:0.92rem;background:rgba(212,175,55,0.1);padding:0.85rem 0.6rem;text-align:left;">Status</th>
               </tr>
             </thead>
-            <tbody id="ledgerBody" style="color:#1e3a8a;"></tbody>
+            <tbody id="ledgerBody" style="color:#fff;"></tbody>
           </table>
 
           <button onclick="closeLedger()" style="
@@ -1145,12 +1145,12 @@ app.get('/app', (req, res) => {
             });
             const transactions = await res.json();
             
-            // ✅ Enhanced ledger rows — clean, professional, BLUE TEXT
+            // ✅ Blue headers, white data, gold ID
             document.getElementById('ledgerBody').innerHTML = transactions.map(tx => 
               \`<tr style="border-bottom:1px solid rgba(255,255,255,0.08);">
                 <td style="padding:0.85rem 0.6rem;"><code style="font-family:monospace;color:#FFD700;">\${tx.transactionId}</code></td>
                 <td style="padding:0.85rem 0.6rem;">\${new Date(tx.timestamp).toLocaleString()}</td>
-                <td style="padding:0.85rem 0.6rem;">\${tx.customerName}<br/><small style="color:#4b5563;">\${tx.customerNumber}</small></td>
+                <td style="padding:0.85rem 0.6rem;">\${tx.customerName}<br/><small style="color:#94a3b8;">\${tx.customerNumber}</small></td>
                 <td style="padding:0.85rem 0.6rem;">₵\${tx.amount.toFixed(2)}</td>
                 <td style="padding:0.85rem 0.6rem;">₵\${tx.commission.toFixed(2)}</td>
                 <td style="padding:0.85rem 0.6rem;">
@@ -1490,10 +1490,12 @@ app.get('/admin', (req, res) => {
           <div class="stat-card">
             <div class="stat-label">Total Volume (GHS)</div>
             <div class="stat-value" id="totalVol">—</div>
+            <div class="stat-value" style="font-size:1.1rem;color:#94a3b8;margin-top:0.3rem;" id="totalVolUSD">— USD</div>
           </div>
           <div class="stat-card">
             <div class="stat-label">Total Commission (GHS)</div>
             <div class="stat-value" id="totalComm">—</div>
+            <div class="stat-value" style="font-size:1.1rem;color:#94a3b8;margin-top:0.3rem;" id="totalCommUSD">— USD</div>
           </div>
         </div>
 
@@ -1535,7 +1537,8 @@ app.get('/admin', (req, res) => {
             <thead>
               <tr>
                 <th>Name</th>
-                <th>Owner (DOB)</th>
+                <th>Owner Name</th>
+                <th>DOB</th>
                 <th>Phone</th>
                 <th>Network</th>
                 <th>Since</th>
@@ -1614,6 +1617,11 @@ app.get('/admin', (req, res) => {
             document.getElementById('totalVol').textContent = data.stats.totalVolume.toFixed(2);
             document.getElementById('totalComm').textContent = data.stats.totalCommission.toFixed(2);
 
+            // ✅ USD CONVERSION (1 USD = 15 GHS)
+            const GHS_TO_USD = 15;
+            document.getElementById('totalVolUSD').textContent = `≈ ${(data.stats.totalVolume / GHS_TO_USD).toFixed(2)} USD`;
+            document.getElementById('totalCommUSD').textContent = `≈ ${(data.stats.totalCommission / GHS_TO_USD).toFixed(2)} USD`;
+
             // 🎂 Check for birthdays today
             const today = new Date();
             const birthdayBusinesses = data.merchants.filter(b => {
@@ -1672,13 +1680,14 @@ app.get('/admin', (req, res) => {
             const res = await fetch('/api/admin/data?password=' + encodeURIComponent(currentPassword));
             const data = await res.json();
             
-            // ✅ ADD NETWORK TO BUSINESSES + DELETE BUTTON
+            // ✅ NEW BUSINESSES: SEPARATE "Owner Name" AND "DOB"
             document.getElementById('bizBody').innerHTML = data.merchants.slice(0, 20).map(b => {
               const dob = new Date(b.ownerDob);
               const dobStr = \`\${dob.getDate()}/\${dob.getMonth()+1}/\${dob.getFullYear()}\`;
               return \`<tr>
                 <td><strong>\${b.businessName}</strong></td>
-                <td>\${b.ownerName} (<small>\${dobStr}</small>)</td>
+                <td>\${b.ownerName}</td>
+                <td>\${dobStr}</td>
                 <td>\${b.businessPhone}</td>
                 <td><span style="background:#3b82f6;padding:2px 6px;border-radius:4px;color:white;font-size:0.85em;">\${b.network || '—'}</span></td>
                 <td>\${b.businessSince}</td>
@@ -1687,23 +1696,23 @@ app.get('/admin', (req, res) => {
               </tr>\`;
             }).join('');
 
-            // ✅ ADD NETWORK TO TRANSACTIONS + DELETE BUTTON
+            // ✅ TRANSACTIONS: ALL DETAILS VISIBLE
             document.getElementById('txBody').innerHTML = data.transactions.slice(0, 30).map(tx => {
               const merchant = data.merchants.find(m => m.businessPhone === tx.businessPhone);
               const network = merchant ? merchant.network : '—';
               return \`<tr>
-                <td><code>\${tx.transactionId}</code></td>
+                <td><code style="font-family:monospace;color:#FFD700;">\${tx.transactionId}</code></td>
                 <td>\${new Date(tx.timestamp).toLocaleString()}</td>
                 <td><strong>\${tx.businessName}</strong><br/><small>\${tx.businessPhone}</small></td>
                 <td><span style="background:#3b82f6;padding:2px 6px;border-radius:4px;color:white;font-size:0.85em;">\${network}</span></td>
-                <td>\${tx.customerName}</td>
+                <td>\${tx.customerName} (<small>\${tx.customerNumber}</small>)</td>
                 <td>₵\${tx.amount.toFixed(2)}</td>
                 <td>₵\${tx.commission.toFixed(2)}</td>
                 <td><button class="btn-delete" onclick="deleteTransaction('\${tx.transactionId}')">🗑️</button></td>
               </tr>\`;
             }).join('');
 
-            // ✅ SUPPORT TICKETS + DELETE BUTTON
+            // ✅ SUPPORT TICKETS
             document.getElementById('supportBody').innerHTML = data.supportTickets.map(t => 
               \`<tr>
                 <td><strong>\${t.businessName}</strong> (\${t.ownerName})<br/><small>\${t.businessPhone}</small></td>
