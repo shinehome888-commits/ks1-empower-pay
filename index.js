@@ -9,7 +9,6 @@ const app = express();
 app.use(express.json());
 
 const MONGODB_URI = process.env.MONGODB_URI;
-// ✅ NO BUSINESS_PASSWORD CHECK FOR ADMIN (TEMPORARY)
 
 if (!MONGODB_URI) {
   console.error("❌ FATAL: MONGODB_URI not set");
@@ -165,7 +164,6 @@ app.post('/api/reset-password', async (req, res) => {
 
 // === GENERATE RESET CODE (ADMIN) ===
 app.post('/api/admin/generate-reset', async (req, res) => {
-  // ✅ NO PASSWORD CHECK
   const { businessPhone } = req.body;
 
   try {
@@ -237,14 +235,15 @@ app.post('/api/momo/request', async (req, res) => {
     );
     
     // Push Family Pulse
-    const customerShort = customerName.split(' ')[0] || 'Customer';
+    const customerShort = customerName.split(' ')[0] || 'Valued Customer';
     const businessShort = merchant.businessName.split(' ')[0] || 'Business';
     await pushPulse(`${customerShort} just paid ₵${amount} → ${businessShort} 🎉`, 'transaction');
 
     res.json({ 
       success: true, 
       transactionId: transaction.transactionId,
-      businessName: merchant.businessName
+      businessName: merchant.businessName,
+      customerName: customerName
     });
   } catch (err) {
     console.error("Save error:", err.message);
@@ -283,7 +282,6 @@ app.post('/api/support', async (req, res) => {
 
 // === ADMIN DATA (NO PASSWORD) ===
 app.get('/api/admin/data', async (req, res) => {
-  // ✅ NO PASSWORD CHECK
   try {
     const merchants = await db.collection('merchants')
       .find({ active: true })
@@ -353,7 +351,6 @@ app.get('/api/pulse', async (req, res) => {
 
 // === DELETE BUSINESS (NO PASSWORD) ===
 app.delete('/api/admin/business/:phone', async (req, res) => {
-  // ✅ NO PASSWORD CHECK
   try {
     await db.collection('merchants').deleteOne({ businessPhone: req.params.phone });
     await db.collection('transactions').deleteMany({ businessPhone: req.params.phone });
@@ -366,7 +363,6 @@ app.delete('/api/admin/business/:phone', async (req, res) => {
 
 // === DELETE TRANSACTION (NO PASSWORD) ===
 app.delete('/api/admin/transaction/:id', async (req, res) => {
-  // ✅ NO PASSWORD CHECK
   try {
     await db.collection('transactions').deleteOne({ transactionId: req.params.id });
     res.json({ success: true });
@@ -377,7 +373,6 @@ app.delete('/api/admin/transaction/:id', async (req, res) => {
 
 // === DELETE SUPPORT TICKET (NO PASSWORD) ===
 app.delete('/api/admin/support/:id', async (req, res) => {
-  // ✅ NO PASSWORD CHECK
   try {
     await db.collection('support').deleteOne({ _id: new ObjectId(req.params.id) });
     res.json({ success: true });
@@ -1153,19 +1148,21 @@ app.get('/app', (req, res) => {
             });
             const d = await res.json();
             if (d.success) {
+              // ✅ PERSONALIZED RECEIPT FOR CUSTOMER
+              const customerFirstName = data.customerName.split(' ')[0] || 'Valued Customer';
               const receiptText = 
-                \`KS1 EMPOWER PAY\\n\` +
-                \`────────────────────\\n\` +
-                \`Business: \${d.businessName}\\n\` +
-                \`Customer: \${data.customerName}\\n\` +
-                \`Amount: GHS \${data.amount}\\n\` +
-                \`Status: Completed\\n\` +
-                \`ID: \${d.transactionId}\\n\` +
-                \`Timestamp: \${new Date().toLocaleString()}\\n\\n\` +
-                \`Thank You! You just empowered Alkebulan (AFRICA) digital freedom.\`;
+                \`Hi \${customerFirstName}! 🌍\\n\\n\` +
+                \`Your payment of ₵\${data.amount} to \${d.businessName} has been confirmed.\\n\\n\` +
+                \`✅ Transaction ID: \${d.transactionId}\\n\` +
+                \`🕒 Timestamp: \${new Date().toLocaleString()}\\n\\n\` +
+                \`Thank you, \${customerFirstName}! You just empowered Alkebulan (Africa) digital freedom.\\n\\n\` +
+                \`— \\nKS1 Empower Pay\\nNon-custodial • Africa-first • Nonprofit-powered\`;
 
-              const waUrl = \`https://wa.me/?text=\${encodeURIComponent(receiptText)}\`;
-              r.innerHTML = '<strong>✅ Payment Completed!</strong><br/>Transaction ID: <b>' + d.transactionId + '</b><br/><a href="' + waUrl + '" target="_blank" style="color:#3b82f6;">📱 View Receipt on WhatsApp</a>';
+              // ✅ SEND DIRECTLY TO CUSTOMER'S WHATSAPP
+              const cleanPhone = data.customerPhone.replace(/\D/g, ''); // Remove non-digits
+              const waUrl = \`https://wa.me/\${cleanPhone}?text=\${encodeURIComponent(receiptText)}\`;
+              
+              r.innerHTML = '<strong>✅ Payment Completed!</strong><br/>Transaction ID: <b>' + d.transactionId + '</b><br/><a href="' + waUrl + '" target="_blank" style="color:#3b82f6;">📲 Send Receipt to Customer</a>';
             } else {
               r.innerHTML = '❌ Failed: ' + (d.error || 'Unknown');
             }
