@@ -349,6 +349,24 @@ app.get('/api/pulse', async (req, res) => {
   }
 });
 
+// === COMMUNITY STATS ===
+app.get('/api/community-stats', async (req, res) => {
+  try {
+    const merchants = await db.collection('merchants').countDocuments();
+    const transactions = await db.collection('transactions').countDocuments();
+    const volume = await db.collection('transactions').aggregate([
+      { $group: { _id: null, total: { $sum: "$amount" } } }
+    ]).toArray();
+    res.json({
+      totalMerchants: merchants,
+      totalTransactions: transactions,
+      totalVolume: volume[0]?.total || 0
+    });
+  } catch (err) {
+    res.json({ totalMerchants: 0, totalTransactions: 0, totalVolume: 0 });
+  }
+});
+
 // === DELETE BUSINESS (NO PASSWORD) ===
 app.delete('/api/admin/business/:phone', async (req, res) => {
   try {
@@ -535,6 +553,15 @@ app.get('/', (req, res) => {
           padding-top: 1.5rem;
           border-top: 1px solid rgba(212, 175, 55, 0.2);
         }
+        .community-stats {
+          background: rgba(30, 58, 138, 0.15);
+          border-left: 3px solid #3b82f6;
+          padding: 12px;
+          border-radius: 0 8px 8px 0;
+          margin: 15px 0;
+          font-size: 0.9rem;
+          color: #cbd5e1;
+        }
         .footer {
           text-align: center;
           color: #94a3b8;
@@ -561,6 +588,11 @@ app.get('/', (req, res) => {
       <div class="login-card">
         <h1>KS1 Empower Pay</h1>
         
+        <!-- Community Stats -->
+        <div class="community-stats" id="communityStats">
+          Loading community stats...
+        </div>
+
         <!-- Register -->
         <p class="subtitle">Register Your Business</p>
         <div class="form-group">
@@ -623,7 +655,7 @@ app.get('/', (req, res) => {
 
         <!-- Support -->
         <div class="section">
-          <button class="btn-action" onclick="reportIssue()">🛠️ Contact Support</button>
+          <a href="https://wa.me/233555987654?text=Support%20for%20KS1%20Empower%20Pay" target="_blank" style="display:inline-block;background:linear-gradient(135deg, #D4AF37, #FFD700);color:#0c1a3a;font-weight:800;text-decoration:none;padding:0.8rem 1rem;border-radius:10px;width:100%;text-align:center;">🛠️ Contact Support</a>
         </div>
 
         <div id="error" class="error"></div>
@@ -635,6 +667,19 @@ app.get('/', (req, res) => {
       </div>
 
       <script>
+        // Load community stats
+        async function loadCommunityStats() {
+          try {
+            const res = await fetch('/api/community-stats');
+            const stats = await res.json();
+            document.getElementById('communityStats').innerHTML = 
+              \`<strong>🌍 Our Family This Week</strong><br/>${stats.totalMerchants} businesses • ₵${Math.round(stats.totalVolume)} transacted\`;
+          } catch (e) {
+            document.getElementById('communityStats').style.display = 'none';
+          }
+        }
+        loadCommunityStats();
+
         function togglePassword(id) {
           const input = document.getElementById(id);
           const btn = input.nextElementSibling;
@@ -744,32 +789,6 @@ app.get('/', (req, res) => {
             }
           } catch (e) {
             errorEl.textContent = 'Network error';
-          }
-        }
-
-        async function reportIssue() {
-          const issue = prompt("Describe your technical issue:");
-          if (!issue) return;
-
-          let businessPhone = localStorage.getItem('businessPhone') || prompt("Your Business Phone (+233...):");
-          let ownerName = localStorage.getItem('ownerName') || prompt("Your Full Name:");
-          let businessName = localStorage.getItem('businessName') || prompt("Your Business Name:");
-
-          if (!businessPhone || !ownerName || !businessName) {
-            alert('Please provide all details.');
-            return;
-          }
-
-          try {
-            const res = await fetch('/api/support', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ businessPhone, ownerName, businessName, issue })
-            });
-            const d = await res.json();
-            alert(d.message || 'Support request sent!');
-          } catch (e) {
-            alert('Failed to send support request');
           }
         }
       </script>
@@ -944,6 +963,25 @@ app.get('/app', (req, res) => {
           font-size: 14px;
           text-align: center;
         }
+        #family-pulse {
+          background: rgba(30, 58, 138, 0.08);
+          border-left: 3px solid #3b82f6;
+          padding: 10px;
+          border-radius: 0 8px 8px 0;
+          margin: 12px 0;
+          font-size: 0.9rem;
+          color: #1e40af;
+          display: none;
+        }
+        .offline-notice {
+          background: #fef3c7;
+          color: #92400e;
+          padding: 10px;
+          border-radius: 8px;
+          margin: 10px 0;
+          font-size: 0.85rem;
+          text-align: center;
+        }
         .theme-toggle {
           background: linear-gradient(135deg, #D4AF37, #FFD700);
           color: #1e3a8a;
@@ -996,6 +1034,9 @@ app.get('/app', (req, res) => {
           💡 1% solidarity contribution supports our mission.<br/>
           Please remind customers to include Mobile Money network charges when sending funds.
         </div>
+
+        <div id="family-pulse"></div>
+        <div id="offlineNotice" class="offline-notice" style="display:none;"></div>
 
         <div class="card">
           <h2>Create Mobile Money Payment</h2>
@@ -1062,6 +1103,24 @@ app.get('/app', (req, res) => {
             <tbody id="ledgerBody" style="color:#fff;"></tbody>
           </table>
 
+          <!-- ✅ EXPORT BUTTON -->
+          <button onclick="exportLedger()" style="
+            margin-top: 1.2rem;
+            background: linear-gradient(135deg, #4ade80, #22c55e);
+            color: #0c1a3a;
+            font-weight: 700;
+            border: none;
+            border-radius: 8px;
+            padding: 0.7rem 1.2rem;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #16a34a;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            min-height: 44px;
+          ">
+            📥 Export Ledger (CSV)
+          </button>
+
           <button onclick="closeLedger()" style="
             margin-top: 1.5rem;
             background: linear-gradient(135deg, #D4AF37, #FFD700);
@@ -1121,6 +1180,19 @@ app.get('/app', (req, res) => {
           }
         }
 
+        // === OFFLINE MODE ===
+        let isOnline = true;
+        window.addEventListener('online', () => {
+          isOnline = true;
+          document.getElementById('offlineNotice').style.display = 'none';
+        });
+        window.addEventListener('offline', () => {
+          isOnline = false;
+          const lastSeen = localStorage.getItem('lastSeen');
+          document.getElementById('offlineNotice').innerHTML = 'You’re offline — last activity: ' + (lastSeen ? new Date(parseInt(lastSeen)).toLocaleString() : 'never');
+          document.getElementById('offlineNotice').style.display = 'block';
+        });
+
         async function pay() {
           const data = {
             businessPhone,
@@ -1148,19 +1220,22 @@ app.get('/app', (req, res) => {
             });
             const d = await res.json();
             if (d.success) {
+              // Update last seen
+              localStorage.setItem('lastSeen', Date.now().toString());
+
               // ✅ PERSONALIZED RECEIPT FOR CUSTOMER
               const customerFirstName = data.customerName.split(' ')[0] || 'Valued Customer';
               const receiptText = 
-                \`Hi \${customerFirstName}! 🌍\\n\\n\` +
-                \`Your payment of ₵\${data.amount} to \${d.businessName} has been confirmed.\\n\\n\` +
-                \`✅ Transaction ID: \${d.transactionId}\\n\` +
-                \`🕒 Timestamp: \${new Date().toLocaleString()}\\n\\n\` +
-                \`Thank you, \${customerFirstName}! You just empowered Alkebulan (Africa) digital freedom.\\n\\n\` +
-                \`— \\nKS1 Empower Pay\\nNon-custodial • Africa-first • Nonprofit-powered\`;
+                'Hi ' + customerFirstName + '! 🌍\\n\\n' +
+                'Your payment of ₵' + data.amount + ' to ' + d.businessName + ' has been confirmed.\\n\\n' +
+                '✅ Transaction ID: ' + d.transactionId + '\\n' +
+                '🕒 Timestamp: ' + new Date().toLocaleString() + '\\n\\n' +
+                'Thank you, ' + customerFirstName + '! You just empowered Alkebulan (Africa) digital freedom.\\n\\n' +
+                '— \\nKS1 Empower Pay\\nNon-custodial • Africa-first • Nonprofit-powered';
 
               // ✅ SEND DIRECTLY TO CUSTOMER'S WHATSAPP
-              const cleanPhone = data.customerPhone.replace(/\D/g, ''); // Remove non-digits
-              const waUrl = \`https://wa.me/\${cleanPhone}?text=\${encodeURIComponent(receiptText)}\`;
+              const cleanPhone = data.customerPhone.replace(/\\D/g, '');
+              const waUrl = 'https://wa.me/' + cleanPhone + '?text=' + encodeURIComponent(receiptText);
               
               r.innerHTML = '<strong>✅ Payment Completed!</strong><br/>Transaction ID: <b>' + d.transactionId + '</b><br/><a href="' + waUrl + '" target="_blank" style="color:#3b82f6;">📲 Send Receipt to Customer</a>';
             } else {
@@ -1173,37 +1248,127 @@ app.get('/app', (req, res) => {
 
         // === VIEW TRANSACTION LEDGER ===
         async function viewLedger() {
+          let transactions = [];
           try {
             const res = await fetch('/api/my-transactions', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ businessPhone: businessPhone })
             });
-            const transactions = await res.json();
+            transactions = await res.json();
             
-            // ✅ Blue headers, white data, gold ID
-            document.getElementById('ledgerBody').innerHTML = transactions.map(tx => 
-              \`<tr style="border-bottom:1px solid rgba(255,255,255,0.08);">
-                <td style="padding:0.85rem 0.6rem;"><code style="font-family:monospace;color:#FFD700;">\${tx.transactionId}</code></td>
-                <td style="padding:0.85rem 0.6rem;">\${new Date(tx.timestamp).toLocaleString()}</td>
-                <td style="padding:0.85rem 0.6rem;">\${tx.customerName}<br/><small style="color:#94a3b8;">\${tx.customerNumber}</small></td>
-                <td style="padding:0.85rem 0.6rem;">₵\${tx.amount.toFixed(2)}</td>
-                <td style="padding:0.85rem 0.6rem;">₵\${tx.commission.toFixed(2)}</td>
-                <td style="padding:0.85rem 0.6rem;">
-                  <span style="background:#10b981;color:white;padding:4px 8px;border-radius:6px;font-size:0.85em;font-weight:600;">\${tx.status}</span>
-                </td>
-              </tr>\`
-            ).join('');
-            
-            document.getElementById('ledgerModal').style.display = 'block';
+            // Cache for offline + export
+            localStorage.setItem('ledgerData', JSON.stringify(transactions));
+            localStorage.setItem('lastSeen', Date.now().toString());
           } catch (e) {
-            alert('Failed to load ledger');
+            // Try offline cache
+            const cached = localStorage.getItem('ledgerData');
+            if (cached) {
+              transactions = JSON.parse(cached);
+              document.getElementById('offlineNotice').innerHTML = 'Showing cached data (offline)';
+              document.getElementById('offlineNotice').style.display = 'block';
+            } else {
+              alert('Failed to load ledger and no offline data available.');
+              return;
+            }
           }
+          
+          // ✅ Blue headers, white data, gold ID
+          document.getElementById('ledgerBody').innerHTML = transactions.map(tx => 
+            '<tr style="border-bottom:1px solid rgba(255,255,255,0.08);">' +
+            '<td style="padding:0.85rem 0.6rem;"><code style="font-family:monospace;color:#FFD700;">' + tx.transactionId + '</code></td>' +
+            '<td style="padding:0.85rem 0.6rem;">' + new Date(tx.timestamp).toLocaleString() + '</td>' +
+            '<td style="padding:0.85rem 0.6rem;">' + tx.customerName + '<br/><small style="color:#94a3b8;">' + tx.customerNumber + '</small></td>' +
+            '<td style="padding:0.85rem 0.6rem;">₵' + tx.amount.toFixed(2) + '</td>' +
+            '<td style="padding:0.85rem 0.6rem;">₵' + tx.commission.toFixed(2) + '</td>' +
+            '<td style="padding:0.85rem 0.6rem;">' +
+            '<span style="background:#10b981;color:white;padding:4px 8px;border-radius:6px;font-size:0.85em;font-weight:600;">' + tx.status + '</span>' +
+            '</td>' +
+            '</tr>'
+          ).join('');
+          
+          document.getElementById('ledgerModal').style.display = 'block';
         }
 
         function closeLedger() {
           document.getElementById('ledgerModal').style.display = 'none';
         }
+
+        // === EXPORT TRANSACTION LEDGER TO CSV ===
+        function exportLedger() {
+          const transactions = JSON.parse(localStorage.getItem('ledgerData') || '[]');
+          if (transactions.length === 0) {
+            alert('No transactions to export.');
+            return;
+          }
+
+          // CSV headers
+          const headers = ['ID', 'Date', 'Customer', 'Customer Number', 'Amount (GHS)', 'Commission (GHS)', 'Status'];
+          let csv = headers.join(',') + '\\n';
+
+          // Add rows
+          transactions.forEach(tx => {
+            const row = [
+              '"' + tx.transactionId + '"',
+              '"' + new Date(tx.timestamp).toLocaleString() + '"',
+              '"' + tx.customerName + '"',
+              '"' + tx.customerNumber + '"',
+              tx.amount.toFixed(2),
+              tx.commission.toFixed(2),
+              '"' + tx.status + '"'
+            ].join(',');
+            csv += row + '\\n';
+          });
+
+          // Create download
+          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const businessName = localStorage.getItem('businessName') || 'Business';
+          const filename = 'KS1_Ledger_' + businessName.replace(/\\s+/g, '_') + '_' + new Date().toISOString().slice(0,10) + '.csv';
+          
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }
+
+        // === FAMILY PULSE ===
+        async function loadPulse() {
+          try {
+            const res = await fetch('/api/pulse');
+            const pulses = await res.json();
+            if (pulses.length > 0) {
+              const latest = pulses[0];
+              const pulseEl = document.getElementById('family-pulse');
+              pulseEl.textContent = latest.message;
+              pulseEl.style.display = 'block';
+              
+              // Glow for new items (< 10 sec old)
+              if (Date.now() - new Date(latest.timestamp).getTime() < 10000) {
+                pulseEl.style.animation = 'pulseGlow 3s ease-in-out';
+              }
+            }
+          } catch (e) {
+            // Silent fail — pulse is optional
+          }
+        }
+
+        // Add CSS animation for glow
+        const style = document.createElement('style');
+        style.innerHTML = 
+          '@keyframes pulseGlow {' +
+          '  0% { background-color: rgba(59, 130, 246, 0.15); }' +
+          '  50% { background-color: rgba(59, 130, 246, 0.3); }' +
+          '  100% { background-color: rgba(59, 130, 246, 0.15); }' +
+          '}';
+        document.head.appendChild(style);
+
+        // Load on startup + every 30s
+        loadPulse();
+        setInterval(loadPulse, 30000);
       </script>
     </body>
     </html>
@@ -1320,6 +1485,16 @@ app.get('/admin', (req, res) => {
           margin-bottom: 20px;
           text-align: center;
           font-weight: 600;
+        }
+        #family-pulse {
+          background: rgba(30, 58, 138, 0.08);
+          border-left: 3px solid #3b82f6;
+          padding: 10px;
+          border-radius: 0 8px 8px 0;
+          margin: 12px 0;
+          font-size: 0.9rem;
+          color: #cbd5e1;
+          display: none;
         }
         .stats {
           display: grid;
@@ -1511,6 +1686,7 @@ app.get('/admin', (req, res) => {
           🌍 Every transaction fuels our mission to empower African SMEs with sovereign digital tools.
         </div>
 
+        <div id="family-pulse"></div>
         <!-- 🎂 BIRTHDAY NOTIFICATION -->
         <div id="birthdayBanner"></div>
 
@@ -1673,6 +1849,41 @@ app.get('/admin', (req, res) => {
             alert('Failed to load admin data.');
           }
         }
+
+        // === FAMILY PULSE ===
+        async function loadPulse() {
+          try {
+            const res = await fetch('/api/pulse');
+            const pulses = await res.json();
+            if (pulses.length > 0) {
+              const latest = pulses[0];
+              const pulseEl = document.getElementById('family-pulse');
+              pulseEl.textContent = latest.message;
+              pulseEl.style.display = 'block';
+              
+              // Glow for new items (< 10 sec old)
+              if (Date.now() - new Date(latest.timestamp).getTime() < 10000) {
+                pulseEl.style.animation = 'pulseGlow 3s ease-in-out';
+              }
+            }
+          } catch (e) {
+            // Silent fail — pulse is optional
+          }
+        }
+
+        // Add CSS animation for glow
+        const style = document.createElement('style');
+        style.innerHTML = 
+          '@keyframes pulseGlow {' +
+          '  0% { background-color: rgba(59, 130, 246, 0.15); }' +
+          '  50% { background-color: rgba(59, 130, 246, 0.3); }' +
+          '  100% { background-color: rgba(59, 130, 246, 0.15); }' +
+          '}';
+        document.head.appendChild(style);
+
+        // Load on startup + every 30s
+        loadPulse();
+        setInterval(loadPulse, 30000);
 
         // ✅ REAL-TIME SEARCH FEEDBACK
         async function showSearchResult() {
