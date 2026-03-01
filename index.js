@@ -673,7 +673,7 @@ app.get('/', (req, res) => {
             const res = await fetch('/api/community-stats');
             const stats = await res.json();
             document.getElementById('communityStats').innerHTML = 
-              \`<strong>🌍 Our Family This Week</strong><br/>${stats.totalMerchants} businesses • ₵${Math.round(stats.totalVolume)} transacted\`;
+              \`<strong>🌍 Our Family This Week</strong><br/>\${stats.totalMerchants} businesses • ₵\${Math.round(stats.totalVolume)} transacted\`;
           } catch (e) {
             document.getElementById('communityStats').style.display = 'none';
           }
