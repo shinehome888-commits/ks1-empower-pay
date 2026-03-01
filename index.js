@@ -9,7 +9,7 @@ const app = express();
 app.use(express.json());
 
 const MONGODB_URI = process.env.MONGODB_URI;
-const BUSINESS_PASSWORD = process.env.BUSINESS_PASSWORD || "ks1empower2026";
+// ✅ NO BUSINESS_PASSWORD CHECK FOR ADMIN (TEMPORARY)
 
 if (!MONGODB_URI) {
   console.error("❌ FATAL: MONGODB_URI not set");
@@ -120,7 +120,7 @@ app.post('/api/login', async (req, res) => {
       return res.status(404).json({ error: 'Business not found' });
     }
 
-    const expectedPass = merchant.password || BUSINESS_PASSWORD;
+    const expectedPass = merchant.password || "ks1empower2026";
     if (password !== expectedPass) {
       return res.status(401).json({ error: 'Invalid password' });
     }
@@ -165,10 +165,8 @@ app.post('/api/reset-password', async (req, res) => {
 
 // === GENERATE RESET CODE (ADMIN) ===
 app.post('/api/admin/generate-reset', async (req, res) => {
-  const { password, businessPhone } = req.body;
-  if (password !== BUSINESS_PASSWORD) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+  // ✅ NO PASSWORD CHECK
+  const { businessPhone } = req.body;
 
   try {
     const merchant = await db.collection('merchants').findOne({ businessPhone });
@@ -283,13 +281,9 @@ app.post('/api/support', async (req, res) => {
   }
 });
 
-// === ADMIN DATA ===
+// === ADMIN DATA (NO PASSWORD) ===
 app.get('/api/admin/data', async (req, res) => {
-  const { password } = req.query;
-  if (password !== BUSINESS_PASSWORD) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
+  // ✅ NO PASSWORD CHECK
   try {
     const merchants = await db.collection('merchants')
       .find({ active: true })
@@ -357,9 +351,9 @@ app.get('/api/pulse', async (req, res) => {
   }
 });
 
-// === DELETE BUSINESS ===
+// === DELETE BUSINESS (NO PASSWORD) ===
 app.delete('/api/admin/business/:phone', async (req, res) => {
-  if (req.query.password !== BUSINESS_PASSWORD) return res.status(401).json({ error: 'Unauthorized' });
+  // ✅ NO PASSWORD CHECK
   try {
     await db.collection('merchants').deleteOne({ businessPhone: req.params.phone });
     await db.collection('transactions').deleteMany({ businessPhone: req.params.phone });
@@ -370,9 +364,9 @@ app.delete('/api/admin/business/:phone', async (req, res) => {
   }
 });
 
-// === DELETE TRANSACTION ===
+// === DELETE TRANSACTION (NO PASSWORD) ===
 app.delete('/api/admin/transaction/:id', async (req, res) => {
-  if (req.query.password !== BUSINESS_PASSWORD) return res.status(401).json({ error: 'Unauthorized' });
+  // ✅ NO PASSWORD CHECK
   try {
     await db.collection('transactions').deleteOne({ transactionId: req.params.id });
     res.json({ success: true });
@@ -381,9 +375,9 @@ app.delete('/api/admin/transaction/:id', async (req, res) => {
   }
 });
 
-// === DELETE SUPPORT TICKET ===
+// === DELETE SUPPORT TICKET (NO PASSWORD) ===
 app.delete('/api/admin/support/:id', async (req, res) => {
-  if (req.query.password !== BUSINESS_PASSWORD) return res.status(401).json({ error: 'Unauthorized' });
+  // ✅ NO PASSWORD CHECK
   try {
     await db.collection('support').deleteOne({ _id: new ObjectId(req.params.id) });
     res.json({ success: true });
@@ -1218,7 +1212,7 @@ app.get('/app', (req, res) => {
     </html>
   `);
 });
-// === ADMIN DASHBOARD ===
+// === ADMIN DASHBOARD (NO PASSWORD) ===
 app.get('/admin', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -1535,10 +1529,12 @@ app.get('/admin', (req, res) => {
           <div class="stat-card">
             <div class="stat-label">Total Volume (GHS)</div>
             <div class="stat-value" id="totalVol">—</div>
+            <div class="stat-value" style="font-size:1.1rem;color:#94a3b8;margin-top:0.3rem;" id="totalVolUSD">— USD</div>
           </div>
           <div class="stat-card">
             <div class="stat-label">Total Commission (GHS)</div>
             <div class="stat-value" id="totalComm">—</div>
+            <div class="stat-value" style="font-size:1.1rem;color:#94a3b8;margin-top:0.3rem;" id="totalCommUSD">— USD</div>
           </div>
         </div>
 
@@ -1630,14 +1626,11 @@ app.get('/admin', (req, res) => {
       </div>
 
       <script>
-        let currentPassword = '';
-
         // Auto-logout after 45s
         let inactivityTimer;
         function resetTimer() {
           clearTimeout(inactivityTimer);
           inactivityTimer = setTimeout(() => {
-            localStorage.removeItem('adminAuth');
             alert('Session expired for security.');
             window.location.href = '/';
           }, 45000);
@@ -1652,7 +1645,7 @@ app.get('/admin', (req, res) => {
             const query = document.getElementById('search').value.toLowerCase();
             const network = document.getElementById('networkFilter').value;
 
-            const res = await fetch('/api/admin/data?password=' + encodeURIComponent(currentPassword));
+            const res = await fetch('/api/admin/data');
             const data = await res.json();
 
             document.getElementById('totalBiz').textContent = data.stats.totalMerchants;
@@ -1680,8 +1673,7 @@ app.get('/admin', (req, res) => {
               document.getElementById('birthdayBanner').style.display = 'none';
             }
           } catch (err) {
-            alert('Failed to load admin data. Check password.');
-            window.location.href = '/';
+            alert('Failed to load admin data.');
           }
         }
 
@@ -1694,7 +1686,7 @@ app.get('/admin', (req, res) => {
           }
 
           try {
-            const res = await fetch('/api/admin/data?password=' + encodeURIComponent(currentPassword));
+            const res = await fetch('/api/admin/data');
             const data = await res.json();
 
             // Try to find exact match by ID, phone, or business name
@@ -1720,7 +1712,7 @@ app.get('/admin', (req, res) => {
 
         async function viewFullDashboard() {
           try {
-            const res = await fetch('/api/admin/data?password=' + encodeURIComponent(currentPassword));
+            const res = await fetch('/api/admin/data');
             const data = await res.json();
             
             // ✅ NEW BUSINESSES: SEPARATE "Owner Name" AND "DOB"
@@ -1775,11 +1767,11 @@ app.get('/admin', (req, res) => {
           document.getElementById('dashboardModal').style.display = 'none';
         }
 
-        // ✅ DELETE FUNCTIONS
+        // ✅ DELETE FUNCTIONS (NO PASSWORD)
         async function deleteBusiness(phone) {
           if (!confirm('Delete this business and all its data?')) return;
           try {
-            await fetch(\`/api/admin/business/\${phone}?password=\${encodeURIComponent(currentPassword)}\`, { method: 'DELETE' });
+            await fetch(\`/api/admin/business/\${phone}\`, { method: 'DELETE' });
             viewFullDashboard(); // refresh modal
           } catch (e) { alert('Delete failed'); }
         }
@@ -1787,7 +1779,7 @@ app.get('/admin', (req, res) => {
         async function deleteTransaction(id) {
           if (!confirm('Delete this transaction?')) return;
           try {
-            await fetch(\`/api/admin/transaction/\${id}?password=\${encodeURIComponent(currentPassword)}\`, { method: 'DELETE' });
+            await fetch(\`/api/admin/transaction/\${id}\`, { method: 'DELETE' });
             viewFullDashboard();
           } catch (e) { alert('Delete failed'); }
         }
@@ -1795,7 +1787,7 @@ app.get('/admin', (req, res) => {
         async function deleteSupportTicket(id) {
           if (!confirm('Delete this support ticket?')) return;
           try {
-            await fetch(\`/api/admin/support/\${id}?password=\${encodeURIComponent(currentPassword)}\`, { method: 'DELETE' });
+            await fetch(\`/api/admin/support/\${id}\`, { method: 'DELETE' });
             viewFullDashboard();
           } catch (e) { alert('Delete failed'); }
         }
@@ -1813,10 +1805,7 @@ app.get('/admin', (req, res) => {
             const res = await fetch('/api/admin/generate-reset', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ 
-                password: currentPassword,
-                businessPhone: phone 
-              })
+              body: JSON.stringify({ businessPhone: phone })
             });
             const data = await res.json();
             
@@ -1833,9 +1822,6 @@ app.get('/admin', (req, res) => {
           }
         }
 
-        const pwd = prompt("Enter Admin Password:");
-        if (!pwd) window.location.href = '/';
-        currentPassword = pwd;
         loadData();
       </script>
     </body>
